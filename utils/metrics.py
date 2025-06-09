@@ -4,254 +4,248 @@ Evaluation metrics for exoplanet detection models.
 
 import logging
 import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import os 
+from pathlib import Path # <<<<<<<<<<<< ADDED THIS IMPORT
+
 from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score, 
+    accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, average_precision_score, precision_recall_curve,
     confusion_matrix, classification_report
 )
+from tensorflow.keras import backend as K 
 
 logger = logging.getLogger(__name__)
+
+
+def focal_loss(gamma=2., alpha=.25):
+    """
+    Creates a focal loss function for imbalanced classification problems.
+    Reference: https://arxiv.org/abs/1708.02002
+
+    Args:
+        gamma: Focusing parameter that reduces relative loss for well-classified examples.
+        alpha: Class weight parameter to address class imbalance.
+
+    Returns:
+        function: Focal loss function.
+    """
+    def focal_loss_fixed(y_true, y_pred):
+        y_true = K.cast(y_true, 'float32')
+        epsilon = K.epsilon()
+        y_pred = K.clip(y_pred, epsilon, 1.0 - epsilon)
+        cross_entropy = -y_true * K.log(y_pred) - (1.0 - y_true) * K.log(1.0 - y_pred)
+        p_t = y_true * y_pred + (1.0 - y_true) * (1.0 - y_pred)
+        alpha_factor = y_true * alpha + (1.0 - y_true) * (1.0 - alpha)
+        modulating_factor = K.pow((1.0 - p_t), gamma)
+        loss = alpha_factor * modulating_factor * cross_entropy
+        return K.mean(loss)
+    return focal_loss_fixed
 
 
 def calculate_binary_metrics(y_true, y_pred_probs, threshold=0.5):
     """
     Calculate comprehensive metrics for binary classification.
-    
-    Args:
-        y_true: Ground truth labels
-        y_pred_probs: Predicted probabilities
-        threshold: Classification threshold
-    
-    Returns:
-        dict: Dictionary of evaluation metrics
     """
-    # Convert probabilities to binary predictions
+    y_true = np.asarray(y_true)
+    y_pred_probs = np.asarray(y_pred_probs)
+
+    if len(y_true) == 0:
+        logger.warning("Empty y_true array for metric calculation.")
+        return {
+            'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0,
+            'specificity': 0.0, 'npv': 0.0, 'roc_auc': 0.0, 'average_precision': 0.0,
+            'true_positives': 0, 'false_positives': 0, 'true_negatives': 0, 'false_negatives': 0,
+            'optimal_threshold': threshold
+        }
+    if len(y_pred_probs) == 0: 
+        logger.warning("Empty y_pred_probs array for metric calculation.")
+        unique_true_labels = np.unique(y_true)
+        ap_default = 0.0
+        if len(unique_true_labels) == 1 : 
+             if unique_true_labels[0] == 1 : ap_default = 1.0
+        return {
+            'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0,
+            'specificity': 0.0, 'npv': 0.0, 'roc_auc': 0.5 if len(unique_true_labels) > 1 else 0.0, 
+            'average_precision': ap_default,
+            'true_positives': 0, 'false_positives': 0, 'true_negatives': 0, 'false_negatives': 0,
+            'optimal_threshold': threshold
+        }
+
     y_pred = (y_pred_probs >= threshold).astype(int)
-    
-    # Basic metrics
     accuracy = accuracy_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred, zero_division=0)
     recall = recall_score(y_true, y_pred, zero_division=0)
     f1 = f1_score(y_true, y_pred, zero_division=0)
+    roc_auc = 0.5 
+    average_precision = 0.0 
+    unique_true_labels = np.unique(y_true)
+
+    if len(unique_true_labels) > 1: 
+        try:
+            roc_auc = roc_auc_score(y_true, y_pred_probs)
+        except ValueError as e:
+            logger.warning(f"Could not calculate ROC AUC (y_true may contain only one class): {e}")
+        try:
+            average_precision = average_precision_score(y_true, y_pred_probs)
+        except ValueError as e:
+            logger.warning(f"Could not calculate Average Precision (y_true may contain only one class): {e}")
+    elif len(unique_true_labels) == 1: 
+        if unique_true_labels[0] == 1: 
+            average_precision = 1.0 
     
-    # ROC and PR curve metrics
-    try:
-        roc_auc = roc_auc_score(y_true, y_pred_probs)
-    except Exception:
-        roc_auc = 0.5  # Default for random classifier
-        
-    try:
-        average_precision = average_precision_score(y_true, y_pred_probs)
-    except Exception:
-        average_precision = 0.0  # Default
-    
-    # Confusion matrix
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
-    
-    # Additional metrics
-    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-    npv = tn / (tn + fn) if (tn + fn) > 0 else 0  # Negative predictive value
-    
-    # Calculate metrics at different thresholds
-    precision_curve, recall_curve, thresholds = precision_recall_curve(y_true, y_pred_probs)
-    
-    # Find optimal F1 threshold
-    f1_scores = []
-    for prec, rec in zip(precision_curve, recall_curve):
-        f1_scores.append(2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0)
-    
-    optimal_idx = np.argmax(f1_scores)
-    optimal_threshold = thresholds[optimal_idx] if optimal_idx < len(thresholds) else threshold
-    
-    # Create metrics dictionary
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1]) 
+    if cm.size == 4: 
+        tn, fp, fn, tp = cm.ravel()
+    else: 
+        tp = np.sum((y_true == 1) & (y_pred == 1))
+        tn = np.sum((y_true == 0) & (y_pred == 0))
+        fp = np.sum((y_true == 0) & (y_pred == 1))
+        fn = np.sum((y_true == 1) & (y_pred == 0))
+
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+    npv = tn / (tn + fn) if (tn + fn) > 0 else 0.0 
+
+    optimal_threshold_val = threshold 
+    if len(unique_true_labels) > 1 and len(y_true) > 1:
+        try:
+            precision_curve, recall_curve, pr_thresholds_sklearn = precision_recall_curve(y_true, y_pred_probs)
+            f1_scores_curve = []
+            for i in range(len(pr_thresholds_sklearn)):
+                prec_val = precision_curve[i] 
+                rec_val = recall_curve[i]   
+                if (prec_val + rec_val) > 0:
+                    f1_scores_curve.append(2 * prec_val * rec_val / (prec_val + rec_val))
+                else:
+                    f1_scores_curve.append(0.0)
+            
+            if f1_scores_curve: 
+                optimal_idx = np.argmax(f1_scores_curve)
+                optimal_threshold_val = pr_thresholds_sklearn[optimal_idx]
+            else: 
+                 logger.warning("No valid F1 scores generated from PR curve for optimal threshold calculation.")
+        except Exception as e:
+            logger.warning(f"Could not determine optimal threshold from PR curve: {e}", exc_info=True)
+
     metrics = {
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1,
-        'specificity': specificity,
-        'npv': npv,
-        'roc_auc': roc_auc,
-        'average_precision': average_precision,
-        'true_positives': tp,
-        'false_positives': fp,
-        'true_negatives': tn,
-        'false_negatives': fn,
-        'optimal_threshold': optimal_threshold
+        'accuracy': float(accuracy), 'precision': float(precision), 'recall': float(recall),
+        'f1_score': float(f1), 'specificity': float(specificity), 'npv': float(npv),
+        'roc_auc': float(roc_auc), 'average_precision': float(average_precision),
+        'true_positives': int(tp), 'false_positives': int(fp),
+        'true_negatives': int(tn), 'false_negatives': int(fn),
+        'optimal_threshold': float(optimal_threshold_val)
     }
-    
     return metrics
 
 
 def calculate_detection_metrics(true_transits, detected_transits, window=5):
     """
     Calculate metrics for transit detection performance.
-    
-    Args:
-        true_transits: List of true transit indices
-        detected_transits: List of detected transit indices
-        window: Window size for matching transits
-    
-    Returns:
-        dict: Dictionary of detection metrics
     """
-    # Initialize counters
-    tp = 0  # True positives
-    fp = 0  # False positives
-    fn = 0  # False negatives
-    
-    # Mark detected transits
-    detected = [False] * len(detected_transits)
-    
-    # First pass: count true positives and false negatives
+    tp = 0; fp = 0; fn = 0
+    detected_mask = [False] * len(detected_transits) 
+
     for true_idx in true_transits:
-        # Check if this true transit was detected
         matched = False
         for i, detected_idx in enumerate(detected_transits):
-            if abs(true_idx - detected_idx) <= window and not detected[i]:
-                # Match found
+            if abs(true_idx - detected_idx) <= window and not detected_mask[i]:
                 tp += 1
-                detected[i] = True
+                detected_mask[i] = True
                 matched = True
                 break
-        
-        # If no match found, it's a false negative
         if not matched:
             fn += 1
     
-    # Count false positives (unmatched detections)
-    fp = sum(1 for d in detected if not d)
+    fp = sum(1 for d_mask_val in detected_mask if not d_mask_val) 
+
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     
-    # Calculate metrics
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-    
-    metrics = {
-        'true_positives': tp,
-        'false_positives': fp,
-        'false_negatives': fn,
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1
+    return {
+        'true_positives': tp, 'false_positives': fp, 'false_negatives': fn,
+        'precision': precision, 'recall': recall, 'f1_score': f1
     }
-    
-    return metrics
 
 
 def calculate_regression_metrics(y_true, y_pred):
     """
-    Calculate metrics for regression tasks (e.g., planet property estimation).
-    
-    Args:
-        y_true: Ground truth values
-        y_pred: Predicted values
-    
-    Returns:
-        dict: Dictionary of regression metrics
+    Calculate metrics for regression tasks.
     """
-    # Mean Absolute Error
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    if len(y_true) == 0 or len(y_pred) == 0 : return {'mae': 0, 'mse': 0, 'rmse': 0, 'mape': 0, 'r2': 0}
+
     mae = np.mean(np.abs(y_true - y_pred))
-    
-    # Mean Squared Error
     mse = np.mean((y_true - y_pred) ** 2)
-    
-    # Root Mean Squared Error
     rmse = np.sqrt(mse)
     
-    # Mean Absolute Percentage Error
-    with np.errstate(divide='ignore', invalid='ignore'):
-        mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-        # Handle infinities and NaNs
-        if np.isinf(mape) or np.isnan(mape):
-            mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-10))) * 100
-    
-    # R-squared
-    y_mean = np.mean(y_true)
-    ss_total = np.sum((y_true - y_mean) ** 2)
+    mape = np.nan 
+    non_zero_mask = y_true != 0
+    if np.any(non_zero_mask):
+        mape = np.mean(np.abs((y_true[non_zero_mask] - y_pred[non_zero_mask]) / y_true[non_zero_mask])) * 100
+    elif len(y_true) > 0 : 
+        mape = np.mean(np.abs(y_pred)) * 100 
+
+    ss_total = np.sum((y_true - np.mean(y_true)) ** 2)
     ss_residual = np.sum((y_true - y_pred) ** 2)
-    r2 = 1 - (ss_residual / ss_total) if ss_total > 0 else 0
+    r2 = 1 - (ss_residual / ss_total) if ss_total > 0 else 0.0
     
-    # Create metrics dictionary
-    metrics = {
-        'mae': mae,
-        'mse': mse,
-        'rmse': rmse,
-        'mape': mape,
-        'r2': r2
-    }
-    
-    return metrics
+    return {'mae': mae, 'mse': mse, 'rmse': rmse, 'mape': mape, 'r2': r2}
 
 
 def calculate_multimodal_improvement(cnn_metrics, multimodal_metrics):
     """
     Calculate the improvement of multimodal model over CNN model.
-    
-    Args:
-        cnn_metrics: Dictionary of CNN model metrics
-        multimodal_metrics: Dictionary of multimodal model metrics
-    
-    Returns:
-        dict: Dictionary of improvement metrics
     """
     improvement = {}
-    
-    # Find common metrics
+    if not cnn_metrics or not multimodal_metrics: return improvement
+
     common_metrics = set(cnn_metrics.keys()) & set(multimodal_metrics.keys())
-    
     for metric in common_metrics:
-        if isinstance(cnn_metrics[metric], (int, float)) and isinstance(multimodal_metrics[metric], (int, float)):
-            if cnn_metrics[metric] != 0:  # Avoid division by zero
-                pct_change = ((multimodal_metrics[metric] - cnn_metrics[metric]) / cnn_metrics[metric]) * 100
+        cnn_val = cnn_metrics.get(metric)
+        mm_val = multimodal_metrics.get(metric)
+        if isinstance(cnn_val, (int, float)) and isinstance(mm_val, (int, float)):
+            if cnn_val != 0:
+                pct_change = ((mm_val - cnn_val) / abs(cnn_val)) * 100 
                 improvement[f"{metric}_pct_change"] = pct_change
-            
-            absolute_change = multimodal_metrics[metric] - cnn_metrics[metric]
+            absolute_change = mm_val - cnn_val
             improvement[f"{metric}_absolute_change"] = absolute_change
-    
     return improvement
 
 
 def bootstrap_confidence_interval(y_true, y_pred, metric_func, n_bootstraps=1000, confidence=0.95):
     """
     Calculate confidence intervals for metrics using bootstrapping.
-    
-    Args:
-        y_true: Ground truth values
-        y_pred: Predicted values
-        metric_func: Function to calculate metric
-        n_bootstraps: Number of bootstrap samples
-        confidence: Confidence level (e.g., 0.95 for 95% confidence)
-    
-    Returns:
-        tuple: (metric_value, lower_bound, upper_bound)
     """
-    import numpy as np
-    
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
     if len(y_true) != len(y_pred):
         raise ValueError("y_true and y_pred must have the same length")
-    
-    # Calculate the base metric value
+    if len(y_true) == 0:
+        return (0,0,0) if callable(metric_func) and metric_func.__name__ not in ['roc_auc_score', 'average_precision_score'] else (0.5, 0.5, 0.5)
+
     base_metric = metric_func(y_true, y_pred)
-    
-    # Generate bootstrap samples
     bootstrap_metrics = []
     indices = np.arange(len(y_true))
     
     for _ in range(n_bootstraps):
-        # Sample with replacement
         bootstrap_indices = np.random.choice(indices, size=len(indices), replace=True)
         bootstrap_y_true = y_true[bootstrap_indices]
         bootstrap_y_pred = y_pred[bootstrap_indices]
-        
-        # Calculate metric on bootstrap sample
-        bootstrap_metric = metric_func(bootstrap_y_true, bootstrap_y_pred)
-        bootstrap_metrics.append(bootstrap_metric)
+        try:
+            bootstrap_metric = metric_func(bootstrap_y_true, bootstrap_y_pred)
+            bootstrap_metrics.append(bootstrap_metric)
+        except ValueError: 
+            continue
     
-    # Calculate confidence interval
+    if not bootstrap_metrics: 
+        return base_metric, base_metric, base_metric 
+
     lower_percentile = (1 - confidence) / 2 * 100
     upper_percentile = (1 + confidence) / 2 * 100
-    
     lower_bound = np.percentile(bootstrap_metrics, lower_percentile)
     upper_bound = np.percentile(bootstrap_metrics, upper_percentile)
     
@@ -261,187 +255,168 @@ def bootstrap_confidence_interval(y_true, y_pred, metric_func, n_bootstraps=1000
 def get_classification_report(y_true, y_pred, target_names=None):
     """
     Generate a comprehensive classification report.
-    
-    Args:
-        y_true: Ground truth labels
-        y_pred: Predicted labels
-        target_names: Names of the target classes
-    
-    Returns:
-        str: Classification report as string
     """
-    return classification_report(y_true, y_pred, target_names=target_names)
-def calculate_precision_recall_curve_with_thresholds(y_true, y_pred_probs, thresholds=None, return_thresholds=False):
+    if len(y_true) == 0 or len(y_pred) == 0: return "No data to report."
+    return classification_report(y_true, y_pred, target_names=target_names, zero_division=0)
+
+
+def calculate_precision_recall_curve_with_thresholds(y_true, y_pred_probs, thresholds_input=None, return_thresholds=False):
     """
     Calculate precision-recall values at various thresholds.
-    
-    Args:
-        y_true: Ground truth labels
-        y_pred_probs: Predicted probabilities
-        thresholds: Specific thresholds to evaluate (optional)
-        return_thresholds: Whether to return thresholds
-    
-    Returns:
-        dict: Precision-recall values at different thresholds
     """
-    from sklearn.metrics import precision_recall_curve, average_precision_score
-    import numpy as np
+    y_true = np.asarray(y_true)
+    y_pred_probs = np.asarray(y_pred_probs)
+
+    if len(y_true) == 0 or len(y_pred_probs) == 0:
+        logger.warning("Empty y_true or y_pred_probs for PR curve calculation.")
+        empty_curve = {'precision': [], 'recall': [], 'thresholds': [], 'ap_score': 0.0}
+        empty_summary = {
+            'ap_score': 0.0, 'optimal_f1_threshold': 0.5, 'optimal_f1_score': 0.0,
+            'optimal_f2_threshold': 0.5, 'optimal_f2_score': 0.0,
+            'threshold_metrics': [], 'full_curve': empty_curve
+        }
+        return empty_summary if not return_thresholds else (empty_summary, [])
+
+    ap_score = 0.0
+    full_curve_thresholds = np.array([])
+    precision_sklearn_curve = np.array([1.0]) 
+    recall_sklearn_curve = np.array([0.0])    
+
+    if len(np.unique(y_true)) > 1: 
+        try:
+            precision_sklearn_curve, recall_sklearn_curve, full_curve_thresholds = precision_recall_curve(y_true, y_pred_probs)
+            ap_score = average_precision_score(y_true, y_pred_probs)
+        except ValueError as e:
+            logger.warning(f"Could not calculate sklearn PR curve or AP score (y_true may have only one class): {e}")
+    elif len(y_true)>0 and np.all(y_true == 1): 
+        ap_score = 1.0 
     
-    # Get the full precision-recall curve
-    precision, recall, pr_thresholds = precision_recall_curve(y_true, y_pred_probs)
-    ap_score = average_precision_score(y_true, y_pred_probs)
-    
-    # Create a dictionary for the full curve
     full_curve = {
-        'precision': precision,
-        'recall': recall,
-        'thresholds': pr_thresholds,
+        'precision': precision_sklearn_curve.tolist(),
+        'recall': recall_sklearn_curve.tolist(),
+        'thresholds': full_curve_thresholds.tolist(), 
         'ap_score': ap_score
     }
     
-    # If specific thresholds aren't provided, create a range of thresholds
-    if thresholds is None:
-        thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    if thresholds_input is None:
+        thresholds_to_evaluate = np.linspace(0.05, 0.95, 19).tolist() 
+    else:
+        thresholds_to_evaluate = list(thresholds_input) 
     
-    # Calculate metrics at specific thresholds
     threshold_results = []
-    
-    for threshold in thresholds:
-        y_pred = (y_pred_probs >= threshold).astype(int)
-        
-        # Calculate precision and recall
-        true_positives = ((y_pred == 1) & (y_true == 1)).sum()
-        false_positives = ((y_pred == 1) & (y_true == 0)).sum()
-        false_negatives = ((y_pred == 0) & (y_true == 1)).sum()
-        
-        if (true_positives + false_positives) > 0:
-            precision_val = true_positives / (true_positives + false_positives)
-        else:
-            precision_val = 0.0
-            
-        if (true_positives + false_negatives) > 0:
-            recall_val = true_positives / (true_positives + false_negatives)
-        else:
-            recall_val = 0.0
-        
-        f1_score = 2 * precision_val * recall_val / (precision_val + recall_val) if (precision_val + recall_val) > 0 else 0
-        
-        # Calculate F2 score (emphasizes recall more than precision)
+    if not thresholds_to_evaluate : thresholds_to_evaluate = [0.5] 
+
+    for th_val in thresholds_to_evaluate:
+        y_pred_binary = (y_pred_probs >= th_val).astype(int)
+        tp = np.sum((y_pred_binary == 1) & (y_true == 1))
+        fp = np.sum((y_pred_binary == 1) & (y_true == 0))
+        fn = np.sum((y_pred_binary == 0) & (y_true == 1))
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
         beta = 2
-        f2_score = (1 + beta**2) * precision_val * recall_val / ((beta**2 * precision_val) + recall_val) if (precision_val + recall_val) > 0 else 0
-        
+        f2 = (1 + beta**2) * prec * rec / ((beta**2 * prec) + rec) if (prec + rec) > 0 else 0.0
         threshold_results.append({
-            'threshold': threshold,
-            'precision': precision_val,
-            'recall': recall_val,
-            'f1_score': f1_score,
-            'f2_score': f2_score,
-            'predicted_positives': int(true_positives + false_positives),
-            'true_positives': int(true_positives),
-            'false_positives': int(false_positives),
-            'false_negatives': int(false_negatives)
+            'threshold': th_val, 'precision': prec, 'recall': rec, 'f1_score': f1, 'f2_score': f2,
+            'true_positives': int(tp), 'false_positives': int(fp), 'false_negatives': int(fn),
+            'predicted_positives': int(tp + fp)
         })
     
-    # Find the optimal threshold for F1 score
-    f1_scores = [result['f1_score'] for result in threshold_results]
-    optimal_f1_idx = np.argmax(f1_scores)
-    optimal_f1_threshold = threshold_results[optimal_f1_idx]['threshold']
-    
-    # Find the optimal threshold for F2 score (recall-focused)
-    f2_scores = [result['f2_score'] for result in threshold_results]
-    optimal_f2_idx = np.argmax(f2_scores)
-    optimal_f2_threshold = threshold_results[optimal_f2_idx]['threshold']
-    
-    # Create summary with optimization results
+    optimal_f1_th, optimal_f1_val = 0.5, 0.0
+    optimal_f2_th, optimal_f2_val = 0.5, 0.0
+
+    if threshold_results:
+        f1_s = np.array([r['f1_score'] for r in threshold_results])
+        if len(f1_s) > 0 :
+            optimal_f1_idx = np.argmax(f1_s)
+            optimal_f1_th = threshold_results[optimal_f1_idx]['threshold']
+            optimal_f1_val = threshold_results[optimal_f1_idx]['f1_score']
+        f2_s = np.array([r['f2_score'] for r in threshold_results])
+        if len(f2_s) > 0:
+            optimal_f2_idx = np.argmax(f2_s)
+            optimal_f2_th = threshold_results[optimal_f2_idx]['threshold']
+            optimal_f2_val = threshold_results[optimal_f2_idx]['f2_score']
+            
     summary = {
         'ap_score': ap_score,
-        'optimal_f1_threshold': optimal_f1_threshold,
-        'optimal_f1_score': threshold_results[optimal_f1_idx]['f1_score'],
-        'optimal_f2_threshold': optimal_f2_threshold,
-        'optimal_f2_score': threshold_results[optimal_f2_idx]['f2_score'],
+        'optimal_f1_threshold': optimal_f1_th,
+        'optimal_f1_score': optimal_f1_val,
+        'optimal_f2_threshold': optimal_f2_th,
+        'optimal_f2_score': optimal_f2_val,
         'threshold_metrics': threshold_results,
-        'full_curve': full_curve
+        'full_curve': full_curve 
     }
-    
-    if return_thresholds:
-        return summary, thresholds
-    else:
-        return summary
+    return summary if not return_thresholds else (summary, thresholds_to_evaluate)
 
 
-def visualize_threshold_analysis(threshold_metrics, output_dir=None, filename=None):
+def visualize_threshold_analysis(threshold_metrics_list, output_dir=None, filename=None):
     """
     Create a visualization of precision, recall, F1, and F2 scores at different thresholds.
-    
-    Args:
-        threshold_metrics: Dictionary of metrics at different thresholds
-        output_dir: Directory to save the visualization (optional)
-        filename: Name of the output file (optional)
     """
-    import matplotlib.pyplot as plt
-    import os
-    import numpy as np
+    if not threshold_metrics_list: 
+        logger.warning("No threshold metrics provided to visualize_threshold_analysis.")
+        return
+
+    thresholds = [m['threshold'] for m in threshold_metrics_list]
+    precision = [m['precision'] for m in threshold_metrics_list]
+    recall = [m['recall'] for m in threshold_metrics_list]
+    f1_scores = [m['f1_score'] for m in threshold_metrics_list]
+    f2_scores = [m['f2_score'] for m in threshold_metrics_list]
     
-    # Extract metrics from the results
-    thresholds = [m['threshold'] for m in threshold_metrics]
-    precision = [m['precision'] for m in threshold_metrics]
-    recall = [m['recall'] for m in threshold_metrics]
-    f1_scores = [m['f1_score'] for m in threshold_metrics]
-    f2_scores = [m['f2_score'] for m in threshold_metrics]
+    plt.figure(figsize=(14, 10)) 
     
-    plt.figure(figsize=(12, 8))
+    ax1 = plt.subplot(2, 1, 1)
+    ax1.plot(thresholds, precision, 'b-o', label='Precision', markersize=5)
+    ax1.plot(thresholds, recall, 'r-s', label='Recall', markersize=5)
+    ax1.plot(thresholds, f1_scores, 'g-^', label='F1 Score', markersize=5)
+    ax1.plot(thresholds, f2_scores, 'y-d', label='F2 Score', markersize=5)
     
-    # Plot metrics vs threshold
-    plt.subplot(2, 1, 1)
-    plt.plot(thresholds, precision, 'b-', label='Precision')
-    plt.plot(thresholds, recall, 'r-', label='Recall')
-    plt.plot(thresholds, f1_scores, 'g-', label='F1 Score')
-    plt.plot(thresholds, f2_scores, 'y-', label='F2 Score')
+    if f1_scores:
+        f1_optimal_idx = np.argmax(f1_scores)
+        ax1.axvline(x=thresholds[f1_optimal_idx], color='g', linestyle='--', 
+                    label=f'Optimal F1 Th: {thresholds[f1_optimal_idx]:.2f} (F1={f1_scores[f1_optimal_idx]:.2f})')
+    if f2_scores:
+        f2_optimal_idx = np.argmax(f2_scores)
+        ax1.axvline(x=thresholds[f2_optimal_idx], color='y', linestyle=':', 
+                    label=f'Optimal F2 Th: {thresholds[f2_optimal_idx]:.2f} (F2={f2_scores[f2_optimal_idx]:.2f})')
     
-    # Find optimal F1 and F2 thresholds
-    f1_optimal_idx = np.argmax(f1_scores)
-    f2_optimal_idx = np.argmax(f2_scores)
+    ax1.set_xlabel('Threshold')
+    ax1.set_ylabel('Score')
+    ax1.set_title('Metrics vs. Classification Threshold')
+    ax1.legend(loc='best')
+    ax1.grid(True, alpha=0.5)
+    ax1.set_ylim(0, 1.05) 
     
-    # Mark optimal thresholds
-    plt.axvline(x=thresholds[f1_optimal_idx], color='g', linestyle='--', 
-                label=f'Optimal F1 Threshold: {thresholds[f1_optimal_idx]:.2f}')
-    plt.axvline(x=thresholds[f2_optimal_idx], color='y', linestyle='--', 
-                label=f'Optimal F2 Threshold: {thresholds[f2_optimal_idx]:.2f}')
+    ax2 = plt.subplot(2, 1, 2)
+    sorted_indices = np.argsort(recall)
+    ax2.plot(np.array(recall)[sorted_indices], np.array(precision)[sorted_indices], 'b-o', markersize=5)
     
-    plt.xlabel('Threshold')
-    plt.ylabel('Score')
-    plt.title('Metrics vs. Threshold')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    # Plot precision vs recall
-    plt.subplot(2, 1, 2)
-    plt.plot(recall, precision, 'b-o')
-    
-    # Add threshold annotations
-    for i, threshold in enumerate(thresholds):
-        # Only annotate some thresholds to avoid clutter
-        if i % 2 == 0:
-            plt.annotate(f'{threshold:.1f}', 
+    annotation_indices = list(range(0, len(thresholds), max(1, len(thresholds)//5))) 
+    if f1_scores and f1_optimal_idx not in annotation_indices: annotation_indices.append(f1_optimal_idx)
+
+    for i in annotation_indices:
+        if i < len(thresholds): 
+            ax2.annotate(f'{thresholds[i]:.2f}', 
                          (recall[i], precision[i]),
-                         xytext=(5, 5),
-                         textcoords='offset points')
+                         xytext=(5, -5 if i % 2 == 0 else 5), 
+                         textcoords='offset points',
+                         fontsize=8)
     
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision vs. Recall at Different Thresholds')
-    plt.grid(True, alpha=0.3)
+    ax2.set_xlabel('Recall')
+    ax2.set_ylabel('Precision')
+    ax2.set_title('Precision-Recall Curve (from evaluated thresholds)')
+    ax2.grid(True, alpha=0.5)
+    ax2.set_xlim(-0.05, 1.05)
+    ax2.set_ylim(-0.05, 1.05)
+
+    plt.tight_layout(pad=3.0) 
     
-    plt.tight_layout()
-    
-    # Save the figure if a filename is provided
     if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        plt.savefig(full_path, dpi=300, bbox_inches='tight')
+        # This was the line causing the error: Path was not defined. It is now fixed by the import.
+        full_path = Path(output_dir) / filename if output_dir else Path(filename) 
+        full_path.parent.mkdir(parents=True, exist_ok=True) 
+        plt.savefig(str(full_path), dpi=300, bbox_inches='tight')
+        logger.info(f"Saved threshold analysis plot to {full_path}")
         plt.close()
     else:
         plt.show()
@@ -450,68 +425,38 @@ def visualize_threshold_analysis(threshold_metrics, output_dir=None, filename=No
 def confusion_matrix_with_metrics(y_true, y_pred):
     """
     Calculate confusion matrix and related metrics.
-    
-    Args:
-        y_true: Ground truth labels
-        y_pred: Predicted labels
-    
-    Returns:
-        dict: Confusion matrix and metrics
     """
-    from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-    import numpy as np
-    
-    # Calculate confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-    
-    # Extract values from confusion matrix
-    if cm.shape == (2, 2):
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    if len(y_true) == 0 or len(y_pred) == 0:
+        return {
+            'confusion_matrix': np.array([[0,0],[0,0]]).tolist(), 'accuracy': 0, 'precision': 0, 'recall': 0,
+            'specificity': 0, 'f1_score': 0, 'f2_score': 0,
+            'true_positives': 0, 'false_positives': 0, 'true_negatives': 0, 'false_negatives': 0
+        }
+
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    if cm.size == 4:
         tn, fp, fn, tp = cm.ravel()
-    else:
-        tp = fn = fp = tn = 0
-        
-    # Calculate metrics
+    else: 
+        tp = np.sum((y_true == 1) & (y_pred == 1))
+        tn = np.sum((y_true == 0) & (y_pred == 0))
+        fp = np.sum((y_true == 0) & (y_pred == 1))
+        fn = np.sum((y_true == 1) & (y_pred == 0))
+
     accuracy = accuracy_score(y_true, y_pred)
-    
-    # Handle division by zero
-    if tp + fp > 0:
-        precision = precision_score(y_true, y_pred, zero_division=0)
-    else:
-        precision = 0.0
-        
-    if tp + fn > 0:
-        recall = recall_score(y_true, y_pred, zero_division=0)
-    else:
-        recall = 0.0
-        
-    if precision + recall > 0:
-        f1 = f1_score(y_true, y_pred, zero_division=0)
-    else:
-        f1 = 0.0
-    
-    # Calculate additional metrics
-    if tn + fp > 0:
-        specificity = tn / (tn + fp)
-    else:
-        specificity = 0.0
-        
-    # Calculate F2 score (emphasizes recall)
-    if precision + recall > 0:
-        beta = 2
-        f2 = (1 + beta**2) * precision * recall / ((beta**2 * precision) + recall)
-    else:
-        f2 = 0.0
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+    beta = 2
+    f2 = (1 + beta**2) * precision * recall / ((beta**2 * precision) + recall) if (precision + recall) > 0 else 0.0
     
     return {
-        'confusion_matrix': cm,
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'specificity': specificity,
-        'f1_score': f1,
-        'f2_score': f2,
-        'true_positives': tp,
-        'false_positives': fp,
-        'true_negatives': tn,
-        'false_negatives': fn
+        'confusion_matrix': cm.tolist(), 
+        'accuracy': float(accuracy), 'precision': float(precision), 'recall': float(recall),
+        'specificity': float(specificity), 'f1_score': float(f1), 'f2_score': float(f2),
+        'true_positives': int(tp), 'false_positives': int(fp), 
+        'true_negatives': int(tn), 'false_negatives': int(fn)
     }
