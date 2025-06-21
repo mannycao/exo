@@ -1,64 +1,34 @@
-"""
-Configuration settings for the Exoplanet Detection Pipeline.
-Review and adjust these parameters as needed for your specific datasets and goals.
-"""
+# FILE: config.py (New, Complete, and Corrected Version)
 
 import logging
-import os 
 from pathlib import Path
+from tensorflow import keras
 
-# --- Project Structure & Paths ---
+# --- Directory and File Path Configuration ---
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data_files"
 RESULTS_DIR = BASE_DIR / "results"
-MODEL_DIR = BASE_DIR / "models_trained"
-METADATA_DIR = DATA_DIR / "metadata"
+DATA_DIR = BASE_DIR / "data_files"
 LIGHT_CURVE_DIR = DATA_DIR / "light_curves"
+METADATA_DIR = DATA_DIR / "metadata"
+MODEL_DIR = RESULTS_DIR / "trained_models"
 
 # --- Logging Configuration ---
-LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s"
-DEFAULT_LOG_FILE = RESULTS_DIR / "pipeline_general.log"
+LOG_LEVEL = logging.INFO
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
 
-# --- Data Fetching ---
-EXOPLANET_ARCHIVE_TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP"
-MAST_DOWNLOAD_MAX_RECORDS_OBS_TABLE = 200
-MAST_DOWNLOAD_MAX_FILES_PER_RUN = 50
+# --- Data Processing & Feature Extraction ---
+# Maximum expected transit duration in days. Used for setting the detrending window.
+MAX_TRANSIT_DURATION = 1.0
+# Window size for the Savitzky-Golay filter used in detrending.
+DETRENDING_WINDOW_DAYS = 5.0 
 
-# --- Synthetic Data Generation ---
-SYNTHETIC_TRANSIT_PROBABILITY = 0.5 
-SYNTHETIC_TIME_STEPS = 2000
-SYNTHETIC_OBSERVATION_DURATION_DAYS = 100.0 
-SYNTHETIC_NOISE_LEVEL_MIN = 0.0005
-SYNTHETIC_NOISE_LEVEL_MAX = 0.002
-SYNTHETIC_VAR_PROB = 0.7 
-SYNTHETIC_VAR_PERIOD_MIN_DAYS = SYNTHETIC_OBSERVATION_DURATION_DAYS / 10
-SYNTHETIC_VAR_PERIOD_MAX_DAYS = SYNTHETIC_OBSERVATION_DURATION_DAYS / 2
-SYNTHETIC_VAR_AMPLITUDE_MIN = 0.001
-SYNTHETIC_VAR_AMPLITUDE_MAX = 0.005
-SYNTHETIC_TRANSIT_PERIOD_MIN_DAYS = 1.0
-SYNTHETIC_TRANSIT_PERIOD_MAX_DAYS = SYNTHETIC_OBSERVATION_DURATION_DAYS / 3
-SYNTHETIC_TRANSIT_DURATION_MIN_HOURS = 1.0
-SYNTHETIC_TRANSIT_DURATION_MAX_HOURS = 6.0
-SYNTHETIC_TRANSIT_DEPTH_MIN = 0.0005 
-SYNTHETIC_TRANSIT_DEPTH_MAX = 0.01
-
-# --- Light Curve Preprocessing ---
-DEFAULT_STELLAR_RADIUS_SOL = 1.0
-DEFAULT_STELLAR_MASS_SOL = 1.0
-DEFAULT_STELLAR_TEFF_K = 5778.0
-DETRENDING_WINDOW_DAYS = 2.0 
-SAVGOL_POLYORDER = 2
-
-# --- Transit Detection ---
-TRANSIT_SENSITIVITY = 3.0      
-PROMINENCE_FACTOR = 0.5        
-MIN_TRANSIT_DURATION = 0.05    
-MAX_TRANSIT_DURATION = 0.5     
-
-# --- Feature Extraction ---
-WINDOW_SIZE = 1.0 
-IMAGE_SIZE = (64, 64)          
+# --- Transit Detection Parameters ---
+# How many standard deviations below the mean a dip must be to be considered a potential transit.
+TRANSIT_SENSITIVITY = 2.5
+# The minimum number of consecutive data points (cadences) for a valid transit.
+MIN_TRANSIT_DURATION_CADENCES = 2
+# The maximum number of consecutive data points for a valid transit.
+MAX_TRANSIT_DURATION_CADENCES = 50
 
 # --- File Type Constants ---
 FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
@@ -67,24 +37,24 @@ FILE_TYPE_UNKNOWN = 'unknown'
 FILE_TYPE_SYNTHETIC_PLANET = 'synthetic_planet'
 FILE_TYPE_SYNTHETIC_NOISE = 'synthetic_noise'
 
-# --- Model Training Parameters ---
-EPOCHS = 50
+# --- AI Model Training Hyperparameters ---
+MAX_EPOCHS = 50
 BATCH_SIZE = 32
-EARLY_STOPPING_PATIENCE = 15 
+INITIAL_LEARNING_RATE = 1e-4
 
-LEARNING_RATE = 1e-4 # Keeping the safer learning rate
+# Callbacks Configuration
+EARLY_STOPPING_PATIENCE = 5
+LR_REDUCTION_PATIENCE = 3
+LR_REDUCTION_FACTOR = 0.5
 
-# VVVVVVVVVVVVVVVVVVVVVV MODIFICATION VVVVVVVVVVVVVVVVVVVVVV
-# Since the model is predicting all negatives, let's heavily penalize it
-# for missing positives by increasing the alpha weight for the positive class.
-FOCAL_LOSS_ALPHA = 0.75 # Changed from 0.5 to 0.75
-# ^^^^^^^^^^^^^^^^^^^^^^ MODIFICATION ^^^^^^^^^^^^^^^^^^^^^^
+# Model Metrics
+MODEL_METRICS = [
+    'accuracy',
+    keras.metrics.Precision(name='precision'),
+    keras.metrics.Recall(name='recall'),
+    keras.metrics.AUC(name='roc_auc'),
+    keras.metrics.AUC(name='pr_auc', curve='PR')
+]
 
-FOCAL_LOSS_GAMMA = 2.0  
-
-# --- Pipeline Execution Parameters ---
-DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 4
-USE_MULTIMODAL = True      
-USE_CACHE = True             
-AUGMENTATION_FACTOR = 2 # Keeping augmentation factor at 2 for now
-
+# --- Data Augmentation ---
+AUGMENTATION_FACTOR = 2

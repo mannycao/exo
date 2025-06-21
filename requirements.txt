@@ -1,0 +1,17 @@
+# requirements.txt (Final Pinned Version)
+
+# Pin a compatible set of core ML and scientific libraries
+tensorflow==2.19.0
+numpy>=1.26.0,<2.2.0
+pandas
+scipy
+scikit-image
+matplotlib
+
+# Astronomy specific
+astroquery
+astropy
+
+# Other dependencies
+imbalanced-learn
+batman-package
