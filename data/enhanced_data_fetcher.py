@@ -5,6 +5,8 @@ Enhanced data fetcher for exoplanet detection using direct archive access.
 import os
 import logging
 import requests
+import astroquery
+import skimage
 import numpy as np
 import pandas as pd
 from astropy.io import fits
