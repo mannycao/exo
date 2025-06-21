@@ -1,142 +1,125 @@
-"""
-Functions for data balancing and augmentation to improve model training.
-Uses the 'imbalanced-learn' and 'scikit-image' libraries.
-"""
+# data/dataset_generator.py (New Refactored Version)
+
 import logging
-import skimage
 import numpy as np
-
-# Use a try-except block for imblearn import as it might not be installed
-try:
-    from imblearn.over_sampling import RandomOverSampler
-    from imblearn.under_sampling import RandomUnderSampler
-    IMBLEARN_AVAILABLE = True
-except ImportError:
-    IMBLEARN_AVAILABLE = False
-    logging.error(
-        "imbalanced-learn library not found. Data balancing will be skipped. "
-        "Please install it (`pip install imbalanced-learn`)."
-    )
-
-# Use a try-except block for scikit-image import
-try:
-    from skimage.transform import shift
-    SKIMAGE_AVAILABLE = True
-except ImportError:
-    SKIMAGE_AVAILABLE = False
-    logging.error(
-        "scikit-image library not found. Image augmentation will be skipped. "
-        "Please install it (`pip install scikit-image`)."
-    )
-
+import pandas as pd  # <--- ADD THIS LINE
+from imblearn.over_sampling import RandomOverSampler
+from scipy import ndimage
 
 logger = logging.getLogger(__name__)
 
-def balance_dataset(X_image, X_timeseries, y, method='oversample'):
+def _augment_single_image_scipy(image):
     """
-    Balances the dataset using specified method from the imbalanced-learn library.
+    Applies a random set of augmentations to a single 2D image using scipy.
+    This function no longer depends on scikit-image.
     """
-    if not IMBLEARN_AVAILABLE:
-        logger.warning("imbalanced-learn not available. Skipping dataset balancing.")
-        return X_image, X_timeseries, y
+    if image is None:
+        return None
+
+    # Squeeze to 2D for scipy operations, but keep original shape info
+    original_shape = image.shape
+    image_2d = image.squeeze()
+    
+    augmented_image = image_2d.copy()
+
+    # 1. Random Rotation
+    if np.random.rand() > 0.5:
+        angle = np.random.uniform(-15, 15)
+        augmented_image = ndimage.rotate(augmented_image, angle, reshape=False, mode='nearest')
+
+    # 2. Random Shear (Affine Transformation)
+    if np.random.rand() > 0.5:
+        shear_factor = np.random.uniform(-0.15, 0.15)
+        transform_matrix = np.array([[1, shear_factor], [0, 1]])
+        h, w = augmented_image.shape
+        center_offset = 0.5 * np.array([h, w]) - (0.5 * np.array([h, w])).dot(transform_matrix)
+        augmented_image = ndimage.affine_transform(
+            augmented_image, transform_matrix.T, offset=center_offset, mode='nearest'
+        )
+
+    # 3. Random Noise Injection
+    if np.random.rand() > 0.5:
+        noise = np.random.normal(0, 0.03, augmented_image.shape)
+        augmented_image += noise
+
+    # 4. Random Horizontal Flip
+    if np.random.rand() > 0.5:
+        augmented_image = np.fliplr(augmented_image)
+
+    return augmented_image.reshape(original_shape)
+
+def augment_dataset(features, timeseries, labels, augmentation_factor=2, only_positive_class=True):
+    """
+    Augments a dataset of image features using the scipy-based augmentation.
+    """
+    if features is None or labels is None or len(features) == 0 or augmentation_factor <= 1:
+        return features, timeseries, labels
+
+    target_indices = np.where(labels == 1)[0] if only_positive_class else np.arange(len(features))
+    if len(target_indices) == 0:
+        logger.warning("No examples found for augmentation.")
+        return features, timeseries, labels
+
+    logger.info(f"Augmenting {len(target_indices)} examples with factor {augmentation_factor}.")
+    
+    new_features, new_timeseries, new_labels = [], [], []
+
+    # Create n-1 new augmented copies for each target image
+    for _ in range(augmentation_factor - 1):
+        for idx in target_indices:
+            augmented_image = _augment_single_image_scipy(features[idx])
+            new_features.append(augmented_image)
+            new_timeseries.append(timeseries[idx]) # Timeseries is not augmented in this version
+            new_labels.append(labels[idx])
+
+    if not new_features:
+        return features, timeseries, labels
+
+    # Combine original data with the new augmented data
+    final_features = np.concatenate([features, np.array(new_features)], axis=0)
+    final_timeseries = np.concatenate([timeseries, np.array(new_timeseries)], axis=0)
+    final_labels = np.concatenate([labels, np.array(new_labels)], axis=0)
+
+    # Shuffle the combined dataset
+    shuffle_indices = np.random.permutation(len(final_features))
+    logger.info(f"Dataset size after augmentation: {len(final_features)} samples.")
+    
+    return final_features[shuffle_indices], final_timeseries[shuffle_indices], final_labels[shuffle_indices]
+
+def balance_dataset(features, timeseries, labels, method='oversample'):
+    """
+    Balances the dataset using the specified method from imblearn.
+    """
+    if len(np.unique(labels)) < 2:
+        logger.warning("Dataset contains only one class. Skipping balancing.")
+        return features, timeseries, labels
 
     logger.info(f"Attempting to balance dataset using '{method}' method.")
+    original_shape = features.shape
     
-    n_samples, height, width = X_image.shape
-    X_image_reshaped = X_image.reshape(n_samples, -1)
-    
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_reshaped = X_timeseries.reshape(n_samples, -1) if X_timeseries.ndim > 1 else X_timeseries.reshape(-1, 1)
-        X_combined = np.concatenate([X_image_reshaped, X_timeseries_reshaped], axis=1)
-    else:
-        X_combined = X_image_reshaped
+    # Reshape image data for imblearn (2D)
+    features_reshaped = features.reshape(len(features), -1)
 
-    sampler = None
     if method == 'oversample':
         sampler = RandomOverSampler(random_state=42)
-    elif method == 'undersample':
-        sampler = RandomUnderSampler(random_state=42)
     else:
-        logger.warning(f"Unknown balancing method: '{method}'. Returning original dataset.")
-        return X_image, X_timeseries, y
+        # Placeholder for other methods like SMOTE, RandomUnderSampler, etc.
+        logger.warning(f"Balancing method '{method}' not fully implemented, using oversample.")
+        sampler = RandomOverSampler(random_state=42)
 
-    try:
-        X_resampled, y_resampled = sampler.fit_resample(X_combined, y)
-    except ValueError as e:
-        logger.error(f"Error during resampling with method '{method}': {e}. Returning original dataset.")
-        return X_image, X_timeseries, y
-        
-    image_feature_len = height * width
-    X_image_resampled_flat = X_resampled[:, :image_feature_len]
-    X_image_resampled = X_image_resampled_flat.reshape(-1, height, width)
+    # We can't easily resample the timeseries data in the same way,
+    # so we will apply the sampling based on the image features and apply
+    # the same indices to the other arrays.
+    _, y_resampled = sampler.fit_resample(features_reshaped, labels)
     
-    X_timeseries_resampled = None
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_resampled = X_resampled[:, image_feature_len:]
-    
-    class_dist = dict(zip(*np.unique(y_resampled, return_counts=True)))
-    logger.info(f"Dataset after '{method}' balancing: {len(y_resampled)} samples. Class distribution: {class_dist}")
-    
-    return X_image_resampled, X_timeseries_resampled, y_resampled
+    # The `sample_indices_` attribute holds the indices of the samples selected
+    indices = sampler.sample_indices_
 
+    X_image_resampled = features[indices]
+    X_timeseries_resampled = timeseries[indices]
+    y_resampled_final = labels[indices]
 
-def _augment_single_timeseries(segment):
-    """Applies simple augmentations to a single timeseries segment."""
-    noise = np.random.normal(0, 0.005 * np.std(segment), segment.shape) 
-    augmented_segment = segment + noise
-    augmented_segment *= np.random.uniform(0.98, 1.02)
-    return augmented_segment
+    logger.info(f"Dataset after '{method}' balancing: {len(y_resampled_final)} samples. "
+                f"Class distribution: {dict(pd.Series(y_resampled_final).value_counts())}")
 
-def _augment_single_image(image):
-    """Applies simple augmentations to a single image."""
-    if not SKIMAGE_AVAILABLE: return image 
-    noise = np.random.normal(0, 0.005 * np.std(image), image.shape)
-    augmented_image = image + noise
-    h_shift, w_shift = np.random.uniform(-1.5, 1.5, 2)
-    augmented_image = shift(augmented_image, (h_shift, w_shift), mode='reflect')
-    return augmented_image
-
-
-def augment_dataset(X_image, X_timeseries, y, augmentation_factor=2, only_positive_class=False):
-    """
-    Augments the dataset by creating modified copies of samples.
-    """
-    if not SKIMAGE_AVAILABLE:
-        logger.warning("scikit-image not available. Skipping dataset augmentation.")
-        return X_image, X_timeseries, y
-
-    if augmentation_factor <= 1:
-        logger.info("Augmentation factor is 1 or less, no augmentation performed.")
-        return X_image, X_timeseries, y
-        
-    logger.info(f"Augmenting dataset. Each selected sample will have a total of {augmentation_factor} versions.")
-
-    augmented_images = list(X_image)
-    augmented_timeseries = list(X_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else []
-    augmented_labels = list(y)
-
-    indices_to_augment = np.arange(len(y))
-    if only_positive_class:
-        indices_to_augment = np.where(y == 1)[0]
-    
-    logger.info(f"Creating {augmentation_factor - 1} new versions for {len(indices_to_augment)} samples.")
-
-    for i in indices_to_augment:
-        for _ in range(augmentation_factor - 1): 
-            aug_img = _augment_single_image(X_image[i])
-            augmented_images.append(aug_img)
-
-            if X_timeseries is not None and len(X_timeseries) > 0:
-                aug_ts = _augment_single_timeseries(X_timeseries[i])
-                augmented_timeseries.append(aug_ts)
-            
-            augmented_labels.append(y[i])
-
-    final_X_image = np.array(augmented_images)
-    final_y = np.array(augmented_labels)
-    final_X_timeseries = np.array(augmented_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else None
-
-    class_dist = dict(zip(*np.unique(final_y, return_counts=True)))
-    logger.info(f"Dataset after augmentation: {len(final_y)} examples. Class distribution: {class_dist}")
-
-    return final_X_image, final_X_timeseries, final_y
+    return X_image_resampled, X_timeseries_resampled, y_resampled_final
