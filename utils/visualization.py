@@ -1,468 +1,177 @@
-"""
-Visualization utilities for the exoplanet detection pipeline.
-"""
+# FILE: utils/visualization.py (Final, Complete, and Corrected Version)
 
-import os
 import logging
-import numpy as np
+from pathlib import Path
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-
-def visualize_transit(time, flux, transit_info=None, title=None, filename=None, output_dir=None):
-    """
-    Create visualization of a light curve and detected transits.
-    
-    Args:
-        time: Time series data
-        flux: Normalized flux data
-        transit_info: Dictionary with transit information (optional)
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    plt.figure(figsize=(12, 6))
-    plt.plot(time, flux, 'k-', alpha=0.8, label='Normalized Flux')
-    
-    if transit_info is not None and len(transit_info['peak_indices']) > 0:
-        plt.scatter(
-            transit_info['times'], 
-            transit_info['depths'], 
-            color='red', 
-            s=50, 
-            marker='v', 
-            label=f"Detected Transits ({len(transit_info['peak_indices'])})"
-        )
-        
-        # Highlight the transit regions
-        for idx, width in zip(transit_info['peak_indices'], transit_info['widths']):
-            half_width = int(width / 2)
-            left_idx = max(0, idx - half_width)
-            right_idx = min(len(flux) - 1, idx + half_width)
-            plt.axvspan(time[left_idx], time[right_idx], color='red', alpha=0.2)
-    
-    plt.xlabel('Time (BKJD)')
-    plt.ylabel('Normalized Flux')
-    plt.title(title or 'Light Curve with Detected Transits')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved visualization to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
-
-
-def visualize_folded_transit(phase, flux, binned_phase=None, binned_flux=None, 
-                             binned_error=None, period=None, title=None, filename=None, output_dir=None):
-    """
-    Create visualization of a phase-folded light curve.
-    
-    Args:
-        phase: Phase values (0-1)
-        flux: Corresponding flux values
-        binned_phase: Binned phase values (optional)
-        binned_flux: Binned flux values (optional)
-        binned_error: Binned flux error values (optional)
-        period: Orbital period in days (optional, for title)
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    plt.figure(figsize=(10, 6))
-    
-    # Plot the raw folded data
-    plt.scatter(phase, flux, s=2, alpha=0.3, color='gray', label='Folded Data')
-    
-    # Plot the binned data if provided
-    if binned_phase is not None and binned_flux is not None:
-        if binned_error is not None:
-            plt.errorbar(
-                binned_phase, binned_flux, yerr=binned_error,
-                fmt='o-', color='blue', ecolor='blue', alpha=0.7,
-                label='Binned Data'
-            )
-        else:
-            plt.plot(binned_phase, binned_flux, 'o-', color='blue', alpha=0.7, label='Binned Data')
-    
-    period_str = f" (Period: {period:.2f} days)" if period else ""
-    plt.xlabel('Phase')
-    plt.ylabel('Normalized Flux')
-    plt.title(title or f'Phase-Folded Light Curve{period_str}')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved folded transit visualization to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
-
-
-def visualize_periodogram(period, power, peak_periods=None, title=None, filename=None, output_dir=None):
-    """
-    Create visualization of a periodogram.
-    
-    Args:
-        period: Period values
-        power: Corresponding power values
-        peak_periods: List of peak periods to highlight (optional)
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    plt.figure(figsize=(12, 6))
-    
-    # Plot the periodogram
-    plt.semilogx(period, power, 'k-', alpha=0.8)
-    
-    # Mark peak periods if provided
-    if peak_periods is not None and len(peak_periods) > 0:
-        for i, p in enumerate(peak_periods[:5]):  # Show top 5 peaks
-            idx = np.argmin(np.abs(period - p))
-            plt.plot(p, power[idx], 'ro', markersize=8)
-            plt.annotate(
-                f"{p:.2f} days", 
-                xy=(p, power[idx]), 
-                xytext=(0, 10),
-                textcoords='offset points',
-                ha='center'
-            )
-    
-    plt.xlabel('Period (days)')
-    plt.ylabel('Power')
-    plt.title(title or 'Lomb-Scargle Periodogram')
-    plt.grid(True, alpha=0.3)
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved periodogram visualization to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
-
-
-def visualize_transit_model(time, flux, model_flux, title=None, filename=None, output_dir=None):
-    """
-    Create visualization of a transit model fit.
-    
-    Args:
-        time: Time series data
-        flux: Normalized flux data
-        model_flux: Model flux data
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    plt.figure(figsize=(12, 6))
-    
-    # Plot the data and model
-    plt.scatter(time, flux, s=2, alpha=0.5, color='gray', label='Data')
-    plt.plot(time, model_flux, 'r-', linewidth=2, label='Transit Model')
-    
-    # Plot the residuals
-    residuals = flux - model_flux
-    offset = min(flux) - 0.02
-    plt.plot(time, residuals + offset, 'k-', alpha=0.5, label='Residuals')
-    plt.axhline(offset, color='k', linestyle='--', alpha=0.5)
-    
-    plt.xlabel('Time (BKJD)')
-    plt.ylabel('Normalized Flux')
-    plt.title(title or 'Transit Model Fit')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved transit model visualization to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
-
-
-def visualize_detection_results(results, title=None, filename=None, output_dir=None):
-    """
-    Create visualization summarizing detection results.
-    
-    Args:
-        results: List of detection results
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    # Extract data
-    # Safely get transit counts
-    transit_counts = [r.get('transit_count', 0) for r in results]
-    
-    # Safely get periods, only for results that have the 'periodicity' key and it's not None
-    periods = [r.get('periodicity') for r in results if r.get('periodicity') is not None]
-    
-    # Create subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-    
-    # Plot transit count histogram
-    ax1.hist(transit_counts, bins=np.arange(0, max(transit_counts) + 2) - 0.5, alpha=0.7)
-    ax1.set_xlabel('Number of Transits Detected')
-    ax1.set_ylabel('Count')
-    ax1.set_title('Transit Detection Histogram')
-    ax1.grid(True, alpha=0.3)
-    
-    # Plot period histogram
-    if periods:
-        ax2.hist(periods, bins=20, alpha=0.7)
-        ax2.set_xlabel('Orbital Period (days)')
-        ax2.set_ylabel('Count')
-        ax2.set_title('Orbital Period Histogram')
-        ax2.grid(True, alpha=0.3)
-    else:
-        ax2.text(0.5, 0.5, 'No periods detected', ha='center', va='center')
-        ax2.set_title('Orbital Period Histogram')
-    
-    plt.suptitle(title or 'Exoplanet Detection Results')
-    plt.tight_layout()
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved detection results visualization to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
-
-
-def visualize_model_comparison(model_metrics, title=None, filename=None, output_dir=None):
-    """
-    Create visualization comparing multiple model metrics.
-    
-    Args:
-        model_metrics: Dictionary mapping model names to metric dictionaries
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
-    """
-    if not model_metrics:
-        logger.warning("No model metrics provided for comparison")
+def _save_plot(output_dir, filename, figure):
+    """Helper function to save a matplotlib figure and close it properly."""
+    if not output_dir:
+        logger.warning(f"No output directory provided for plot '{filename}'. Skipping save.")
+        plt.close(figure)
         return
-    
-    # Get common metrics across all models
-    common_metrics = set.intersection(*[set(metrics.keys()) for metrics in model_metrics.values()])
-    # Filter to typical classification metrics
-    important_metrics = ['accuracy', 'precision', 'recall', 'f1_score', 'average_precision', 'roc_auc']
-    metrics_to_plot = [m for m in important_metrics if m in common_metrics]
-    
-    if not metrics_to_plot:
-        logger.warning("No common metrics found for comparison")
+    try:
+        output_path = Path(output_dir) / filename
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(output_path)
+        logger.info(f"Saved visualization to {output_path}")
+    except Exception as e:
+        logger.error(f"Failed to save plot {filename}: {e}")
+    finally:
+        # Explicitly close the figure to release memory and prevent hangs
+        plt.close(figure)
+
+
+def visualize_transit_model(time, flux, model_flux, period, output_dir, filename='transit_model_fit.png'):
+    """
+    Creates a plot of the light curve with the batman model fit overlaid.
+    """
+    if time is None or flux is None or model_flux is None:
+        logger.warning("Invalid data for transit model visualization. Skipping plot.")
         return
+
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ax.plot(time, flux, '.', label='Detrended Flux', markersize=2, alpha=0.7)
+    ax.plot(time, model_flux, 'r-', label='Fitted Batman Model', linewidth=2)
     
-    # Create a DataFrame for plotting
-    data = []
-    for model_name, metrics in model_metrics.items():
-        row = {'Model': model_name}
-        for metric in metrics_to_plot:
-            row[metric] = metrics.get(metric, 0)
-        data.append(row)
+    ax.set_title(f'Transit Model Fit (Period = {period:.4f} days)')
+    ax.set_xlabel('Time (BJD)')
+    ax.set_ylabel('Normalized Flux')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
     
-    df = pd.DataFrame(data)
-    
-    # Create a bar chart
-    plt.figure(figsize=(12, 6))
-    bar_width = 0.15
-    x = np.arange(len(df))
-    
-    for i, metric in enumerate(metrics_to_plot):
-        offset = (i - len(metrics_to_plot) / 2 + 0.5) * bar_width
-        plt.bar(x + offset, df[metric], width=bar_width, label=metric)
-    
-    plt.xlabel('Model')
-    plt.ylabel('Score')
-    plt.title(title or 'Model Comparison')
-    plt.xticks(x, df['Model'])
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved model comparison to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
+    _save_plot(output_dir, filename, fig)
 
 
-def visualize_learning_curves(history, metrics=None, title=None, filename=None, output_dir=None):
+def visualize_periodogram(frequency, power, period, output_dir, filename='periodogram.png'):
     """
-    Visualize learning curves from model training history.
-    
-    Args:
-        history: Keras history object or dictionary
-        metrics: List of metrics to plot (optional)
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
+    Creates and saves a plot of the Lomb-Scargle periodogram.
     """
-    # Convert to dictionary if it's a Keras history object
-    if hasattr(history, 'history'):
-        history = history.history
-    
-    if not history:
-        logger.warning("Empty training history provided")
+    if frequency is None or power is None or period is None:
+        logger.warning("Invalid data for periodogram. Skipping plot.")
         return
-    
-    # If metrics not specified, plot all except validation metrics
-    if metrics is None:
-        metrics = [m for m in history.keys() if not m.startswith('val_')]
-    
-    # Create subplots for each metric
-    n_metrics = len(metrics)
-    fig, axes = plt.subplots(1, n_metrics, figsize=(5 * n_metrics, 5))
-    
-    # Handle single metric case
-    if n_metrics == 1:
-        axes = [axes]
-    
-    for i, metric in enumerate(metrics):
-        ax = axes[i]
-        ax.plot(history[metric], label=f'Training {metric}')
-        
-        val_metric = f'val_{metric}'
-        if val_metric in history:
-            ax.plot(history[val_metric], label=f'Validation {metric}')
-        
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel(metric.capitalize())
-        ax.set_title(f'{metric.capitalize()} vs. Epoch')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-    
-    plt.suptitle(title or 'Learning Curves')
-    plt.tight_layout()
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved learning curves to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(1. / frequency, power, 'b-')
+    ax.axvline(period, color='r', linestyle='--', label=f'Best Period = {period:.4f} days')
+    ax.set_title('Lomb-Scargle Periodogram')
+    ax.set_xlabel('Period (days)')
+    ax.set_ylabel('Power')
+    ax.set_xscale('log')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    _save_plot(output_dir, filename, fig)
 
 
-def visualize_confusion_matrix(y_true, y_pred, classes=None, normalize=False, title=None, filename=None, output_dir=None):
+def visualize_folded_transit(time, flux, period, t0, output_dir, filename='folded_transit.png'):
     """
-    Visualize confusion matrix for classification results.
-    
-    Args:
-        y_true: True labels
-        y_pred: Predicted labels (not probabilities)
-        classes: List of class names (optional)
-        normalize: Whether to normalize the confusion matrix (optional)
-        title: Plot title (optional)
-        filename: Path to save the visualization (optional)
-        output_dir: Directory to save the visualization (optional)
+    Creates and saves a phase-folded light curve plot.
     """
-    from sklearn.metrics import confusion_matrix
-    import itertools
+    if period is None or period <= 0:
+        logger.warning("Invalid period provided for folding. Skipping folded plot.")
+        return
+
+    phase = (time - t0 + 0.5 * period) % period - 0.5 * period
+    sort_mask = np.argsort(phase)
+    phase_sorted, flux_sorted = phase[sort_mask], flux[sort_mask]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(phase_sorted, flux_sorted, '.', markersize=2, label='Phase-Folded Flux')
+    ax.set_title(f'Light Curve Folded at Period = {period:.4f} days')
+    ax.set_xlabel('Phase (days)')
+    ax.set_ylabel('Normalized Flux')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
     
-    # Compute confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
+    _save_plot(output_dir, filename, fig)
+
+
+def visualize_transit(time, flux, transit_times, transit_depths, period, output_dir, filename='transit_visualization.png'):
+    """
+    Creates a plot of the light curve, highlighting detected transits.
+    """
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ax.plot(time, flux, '.', label='Detrended Flux', markersize=2)
     
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    if transit_times is not None and len(transit_times) > 0 and transit_depths is not None and len(transit_depths) > 0:
+        ax.plot(transit_times, 1 - transit_depths, 'ro', label='Detected Transits', markersize=4)
     
-    plt.figure(figsize=(8, 6))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title(title or 'Confusion Matrix')
-    plt.colorbar()
+    ax.set_title(f'Detected Transits (Period = {period:.4f} days)')
+    ax.set_xlabel('Time (BJD)')
+    ax.set_ylabel('Normalized Flux')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
     
-    # Add class labels
-    if classes is None:
-        classes = [f'Class {i}' for i in range(cm.shape[0])]
+    _save_plot(output_dir, filename, fig)
+
+
+def visualize_detection_results(processed_results, max_plots=25, output_dir=None, filename='all_detections_summary.png'):
+    """
+    Creates a gallery of plots for each detected transit event.
+    """
+    if not processed_results: return
+
+    all_detections = [seg for r in processed_results if r.get('success') and r.get('transit_segments') for seg in r['transit_segments']]
+    if not all_detections:
+        logger.warning("No transit segments found in any processed results to visualize.")
+        return
+
+    if len(all_detections) > max_plots:
+        indices = np.random.choice(len(all_detections), max_plots, replace=False)
+        all_detections = [all_detections[i] for i in indices]
+
+    num_detections = len(all_detections)
+    if num_detections == 0: return
+
+    cols = int(np.ceil(np.sqrt(num_detections)))
+    rows = int(np.ceil(num_detections / cols))
     
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 3), squeeze=False)
+    axes_flat = axes.flatten()
+
+    for i, segment in enumerate(all_detections):
+        axes_flat[i].plot(segment, '.-')
+        axes_flat[i].set_title(f'Detection #{i+1}')
+        axes_flat[i].set_xticks([])
+        axes_flat[i].set_yticks([])
+
+    for i in range(num_detections, len(axes_flat)):
+        axes_flat[i].set_visible(False)
+
+    fig.tight_layout()
+    _save_plot(output_dir, filename, fig)
+
+
+def visualize_learning_curves(history, output_dir, filename='learning_curves.png'):
+    """
+    Creates plots for model training and validation accuracy and loss.
+    """
+    if not history: return
     
-    # Add text annotations
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+    df = pd.DataFrame(history)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
     
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.tight_layout()
-    
-    if filename:
-        if output_dir:
-            full_path = os.path.join(output_dir, filename)
-        else:
-            full_path = filename
-            
-        try:
-            plt.savefig(full_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved confusion matrix to {full_path}")
-        except Exception as e:
-            logger.error(f"Failed to save visualization to {full_path}: {e}")
-        plt.close()
-    else:
-        plt.show()
+    if 'accuracy' in df and 'val_accuracy' in df:
+        ax1.plot(df['accuracy'], label='Train Accuracy')
+        ax1.plot(df['val_accuracy'], label='Validation Accuracy')
+        ax1.set_title('Model Accuracy')
+        ax1.legend(loc='upper left')
+    ax1.set_ylabel('Accuracy')
+    ax1.set_xlabel('Epoch')
+
+    if 'loss' in df and 'val_loss' in df:
+        ax2.plot(df['loss'], label='Train Loss')
+        ax2.plot(df['val_loss'], label='Validation Loss')
+        ax2.set_title('Model Loss')
+        ax2.legend(loc='upper left')
+    ax2.set_ylabel('Loss')
+    ax2.set_xlabel('Epoch')
+
+    fig.tight_layout()
+    _save_plot(output_dir, filename, fig)
+
