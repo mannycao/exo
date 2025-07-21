@@ -4,74 +4,84 @@ import logging
 import os
 import numpy as np
 from astropy.io import fits
+import pandas as pd
 
-# We keep the dependency checks for completeness, but won't rely on them for the mock run
-from utils.dependencies import ASTROQUERY_AVAILABLE, LIGHTKURVE_AVAILABLE
+# Import the centralized dependencies and availability flags
+from utils.dependencies import (
+    lk, LIGHTKURVE_AVAILABLE,
+    ExoplanetArchive, Observations, ASTROQUERY_AVAILABLE
+)
 
 logger = logging.getLogger(__name__)
+
 
 def create_mock_fits_file(filepath, time_points=2000):
     """Creates a fake FITS file with a plausible light curve structure."""
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     
-    # Create a primary HDU (Header Data Unit) - often empty
     primary_hdu = fits.PrimaryHDU()
-
-    # Create a binary table HDU for the light curve data
     time_col = fits.Column(name='TIME', format='D', array=np.linspace(0, 100, time_points))
     flux_col = fits.Column(name='PDCSAP_FLUX', format='D', array=np.random.normal(1.0, 0.01, size=time_points))
     
     cols = fits.ColDefs([time_col, flux_col])
     hdu = fits.BinTableHDU.from_columns(cols)
     
-    # Create an HDU list and write to file
     hdul = fits.HDUList([primary_hdu, hdu])
     hdul.writeto(filepath, overwrite=True)
     hdul.close()
 
 
-def get_mock_target_lists_and_data(config):
+def generate_sample_light_curves(count, output_dir):
     """
-    Generates mock target lists and creates corresponding fake FITS files.
-    This function replaces the need for astroquery and lightkurve for a test run.
+    Generates a specified number of mock FITS files for testing the pipeline.
+    This function is intended for use with the --synthetic-data flag.
     """
-    logger.info("--- RUNNING IN MOCK DATA MODE ---")
-    logger.info("Skipping real data fetching and generating fake FITS files.")
+    logger.info(f"--- Generating {count} synthetic light curve files ---")
+    os.makedirs(output_dir, exist_ok=True)
 
-    mock_download_dir = os.path.join(config.DATA_DIR, "mock_data")
-    os.makedirs(mock_download_dir, exist_ok=True)
-
-    num_mock_files = getattr(config, 'DOWNLOAD_LIMIT', 10) * 2  # Confirmed and false positives
-    
-    mock_files_info = []
-    for i in range(num_mock_files):
-        label = 'confirmed' if i % 2 == 0 else 'false_positive'
-        filename = f"mock_kic_{i}.fits"
-        filepath = os.path.join(mock_download_dir, filename)
+    typed_files = []
+    for i in range(count):
+        # Alternate between creating mock "planet" and "false positive" files
+        label = 'confirmed_planet' if i % 2 == 0 else 'false_positive'
+        filename = f"synthetic_{label}_{i}.fits"
+        filepath = os.path.join(output_dir, filename)
         
         create_mock_fits_file(filepath)
         
-        mock_files_info.append({
+        typed_files.append({
             "file_path": filepath,
-            "label": label
+            "type": label
         })
-        logger.debug(f"Created mock file: {filepath}")
+        logger.debug(f"Created synthetic file: {filepath}")
         
-    logger.info(f"Generated {len(mock_files_info)} mock data files in {mock_download_dir}")
-    return mock_files_info
+    logger.info(f"Generated {len(typed_files)} synthetic files in {output_dir}")
+    return typed_files
 
-# --- Original Functions (kept for reference but will be bypassed) ---
 
-def get_kepler_target_lists():
+def fetch_exoplanet_labels(use_cache=True):
+    """
+    Uses astroquery to fetch a DataFrame of exoplanet data, including labels.
+    """
     if not ASTROQUERY_AVAILABLE:
-        logger.error("Astroquery is not available. Cannot fetch target lists.")
-        return None, None
-    # ... (original astroquery logic)
-    return [], []
+        logger.error("Astroquery is not available. Cannot fetch exoplanet labels.")
+        return pd.DataFrame() # Return empty DataFrame
 
-def download_light_curves(target_ids, label, download_dir):
-    if not LIGHTKURVE_AVAILABLE:
-        logger.error("Lightkurve is not available. Cannot download light curves.")
-        return []
-    # ... (original lightkurve logic)
-    return []
+    try:
+        logger.info("Querying NASA Exoplanet Archive for catalog labels...")
+        # Fetch a comprehensive table of confirmed exoplanets
+        labels_df = ExoplanetArchive.query_criteria(
+            table="cumulative",
+            select="pl_name, kepid, koi_disposition, default_flag",
+            where="default_flag = 1"
+        )
+        if labels_df is None:
+            logger.error("Failed to retrieve data from Exoplanet Archive.")
+            return pd.DataFrame()
+            
+        return labels_df.to_pandas()
+
+    except Exception as e:
+        logger.error(f"An error occurred while querying for exoplanet labels: {e}", exc_info=True)
+        return pd.DataFrame()
+
+# You can keep your other data fetching functions (like get_kepler_koi_targets) here
