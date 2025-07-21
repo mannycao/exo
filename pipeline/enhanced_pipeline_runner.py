@@ -8,33 +8,34 @@ import config
 from pathlib import Path
 from datetime import datetime
 
-# Your existing, correct imports
 from data.data_fetcher import get_mock_target_lists_and_data
 from data.dataset_generator import create_dataset
 from models.cnn_model import build_transit_detection_model
 from models.model_trainer import train_enhanced_model
-# Import your existing report generator
 from pipeline.report_generator import generate_report
 
-def run_enhanced_pipeline(config):
+# --- THIS IS THE FIX ---
+# Update the function to accept the 'args' from the command line
+def run_enhanced_pipeline(config, args):
     """
-    Main function to run the pipeline with consolidated results and reporting.
+    Main function to run the pipeline, handling config and command-line arguments.
     """
     logger = logging.getLogger(__name__)
 
-    # --- Create a single, timestamped directory for all results ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     result_dir = Path(config.RESULTS_DIR) / f"pipeline_run_{timestamp}"
     os.makedirs(result_dir, exist_ok=True)
     logger.info(f"Pipeline run started. All results will be saved in: {result_dir}")
 
-    # Generate mock data to ensure the pipeline runs
+    # The pipeline now correctly receives 'args', though the mock data function
+    # doesn't use it yet. This structure is ready for when you switch to real data.
+    logger.info(f"Command-line arguments received: {args}")
+
     downloaded_files = get_mock_target_lists_and_data(config)
     if not downloaded_files:
         logger.error("Mock data generation failed. Aborting.")
         return
 
-    # --- Use the new result_dir for processed data ---
     processed_data_dir = result_dir / "processed_data"
     os.makedirs(processed_data_dir, exist_ok=True)
     
@@ -60,8 +61,6 @@ def run_enhanced_pipeline(config):
 
     logger.info("Training the model...")
     
-    # --- Pass the consolidated result_dir to the trainer ---
-    # The 'model' and 'history' objects are now returned from the function
     model, history = train_enhanced_model(
         model=model,
         model_name="exo_cnn_mock_model",
@@ -69,18 +68,15 @@ def run_enhanced_pipeline(config):
         y_train=y_train,
         X_val=X_val,
         y_val=y_val,
-        output_dir=result_dir  # Instruct the trainer to save the model and plots here
+        output_dir=result_dir
     )
     
-    # --- Final Step: Generate the HTML report using your existing function ---
     if history:
-        # Create a dictionary of results to pass to your report generator
         model_results_for_report = {
             'cnn_model': model,
             'cnn_history': history.history,
-            'cnn_metrics': {k: v[-1] for k, v in history.history.items()} # Get final metrics
+            'cnn_metrics': {k: v[-1] for k, v in history.history.items()}
         }
-        # Assuming `results` should be a list of processed file info
         processed_results_for_report = [{'file_path': item['file_path'], 'success': True, 'transit_count': 1} for item in downloaded_files]
 
         generate_report(
