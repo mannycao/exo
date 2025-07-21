@@ -1,142 +1,153 @@
-"""
-Functions for data balancing and augmentation to improve model training.
-Uses the 'imbalanced-learn' and 'scikit-image' libraries.
-"""
-import logging
-import skimage
+# In data/dataset_generator.py
+
 import numpy as np
+from imblearn.over_sampling import SMOTE
+from scipy.ndimage import shift
 
-# Use a try-except block for imblearn import as it might not be installed
-try:
-    from imblearn.over_sampling import RandomOverSampler
-    from imblearn.under_sampling import RandomUnderSampler
-    IMBLEARN_AVAILABLE = True
-except ImportError:
-    IMBLEARN_AVAILABLE = False
-    logging.error(
-        "imbalanced-learn library not found. Data balancing will be skipped. "
-        "Please install it (`pip install imbalanced-learn`)."
-    )
+# ... (keep your existing functions in this file)
 
-# Use a try-except block for scikit-image import
-try:
-    from skimage.transform import shift
-    SKIMAGE_AVAILABLE = True
-except ImportError:
-    SKIMAGE_AVAILABLE = False
-    logging.error(
-        "scikit-image library not found. Image augmentation will be skipped. "
-        "Please install it (`pip install scikit-image`)."
-    )
+def balance_dataset(X, y):
+    """
+    Balances the dataset using SMOTE for oversampling the minority class.
 
+    Args:
+        X (np.ndarray): The feature data.
+        y (np.ndarray): The labels.
+
+    Returns:
+        tuple: A tuple containing the balanced X and y arrays.
+    """
+    # Reshape X for SMOTE if it's 3D (e.g., (n_samples, timesteps, features))
+    original_shape = X.shape
+    if len(original_shape) > 2:
+        X_reshaped = X.reshape(original_shape[0], -1)
+    else:
+        X_reshaped = X
+
+    smote = SMOTE(random_state=42)
+    X_resampled, y_resampled = smote.fit_resample(X_reshaped, y)
+
+    # Reshape X back to its original 3D shape if needed
+    if len(original_shape) > 2:
+        X_resampled = X_resampled.reshape(-1, *original_shape[1:])
+
+    return X_resampled, y_resampleda# data/dataset_generator.py
+
+import logging
+import os
+import numpy as np
+from astropy.io import fits
+from scipy.ndimage import shift
 
 logger = logging.getLogger(__name__)
 
-def balance_dataset(X_image, X_timeseries, y, method='oversample'):
+def _process_fits_file(file_path):
     """
-    Balances the dataset using specified method from the imbalanced-learn library.
+    Reads a FITS file, cleans the light curve data, and converts it into
+    a 2D image representation through phase folding and binning.
     """
-    if not IMBLEARN_AVAILABLE:
-        logger.warning("imbalanced-learn not available. Skipping dataset balancing.")
-        return X_image, X_timeseries, y
-
-    logger.info(f"Attempting to balance dataset using '{method}' method.")
-    
-    n_samples, height, width = X_image.shape
-    X_image_reshaped = X_image.reshape(n_samples, -1)
-    
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_reshaped = X_timeseries.reshape(n_samples, -1) if X_timeseries.ndim > 1 else X_timeseries.reshape(-1, 1)
-        X_combined = np.concatenate([X_image_reshaped, X_timeseries_reshaped], axis=1)
-    else:
-        X_combined = X_image_reshaped
-
-    sampler = None
-    if method == 'oversample':
-        sampler = RandomOverSampler(random_state=42)
-    elif method == 'undersample':
-        sampler = RandomUnderSampler(random_state=42)
-    else:
-        logger.warning(f"Unknown balancing method: '{method}'. Returning original dataset.")
-        return X_image, X_timeseries, y
-
     try:
-        X_resampled, y_resampled = sampler.fit_resample(X_combined, y)
-    except ValueError as e:
-        logger.error(f"Error during resampling with method '{method}': {e}. Returning original dataset.")
-        return X_image, X_timeseries, y
-        
-    image_feature_len = height * width
-    X_image_resampled_flat = X_resampled[:, :image_feature_len]
-    X_image_resampled = X_image_resampled_flat.reshape(-1, height, width)
-    
-    X_timeseries_resampled = None
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_resampled = X_resampled[:, image_feature_len:]
-    
-    class_dist = dict(zip(*np.unique(y_resampled, return_counts=True)))
-    logger.info(f"Dataset after '{method}' balancing: {len(y_resampled)} samples. Class distribution: {class_dist}")
-    
-    return X_image_resampled, X_timeseries_resampled, y_resampled
+        with fits.open(file_path, mode='readonly') as hdul:
+            data = hdul[1].data
+            time = data['TIME']
+            flux = data['PDCSAP_FLUX']
 
+            # Clean up NaN/infinite values from the data
+            finite_mask = np.isfinite(time) & np.isfinite(flux)
+            time, flux = time[finite_mask], flux[finite_mask]
 
-def _augment_single_timeseries(segment):
-    """Applies simple augmentations to a single timeseries segment."""
-    noise = np.random.normal(0, 0.005 * np.std(segment), segment.shape) 
-    augmented_segment = segment + noise
-    augmented_segment *= np.random.uniform(0.98, 1.02)
-    return augmented_segment
+            if len(time) == 0:
+                logger.warning(f"No finite data found in {file_path}")
+                return None
+
+            # --- Phase Folding and Binning ---
+            # NOTE: This is a simplified example.
+            period = 10.0  # Placeholder period in days
+            phase = (time % period) / period
+            
+            bins = 256
+            binned_flux, _, _ = np.histogram2d(phase, flux, bins=[bins, bins])
+            
+            if np.max(binned_flux) > np.min(binned_flux):
+                binned_flux = (binned_flux - np.min(binned_flux)) / (np.max(binned_flux) - np.min(binned_flux))
+            
+            return binned_flux.T
+
+    except Exception as e:
+        logger.error(f"Could not process FITS file {file_path}: {e}")
+        return None
 
 def _augment_single_image(image):
     """Applies simple augmentations to a single image."""
-    if not SKIMAGE_AVAILABLE: return image 
+    if image is None or image.size == 0:
+        return image
     noise = np.random.normal(0, 0.005 * np.std(image), image.shape)
     augmented_image = image + noise
     h_shift, w_shift = np.random.uniform(-1.5, 1.5, 2)
     augmented_image = shift(augmented_image, (h_shift, w_shift), mode='reflect')
     return augmented_image
 
-
-def augment_dataset(X_image, X_timeseries, y, augmentation_factor=2, only_positive_class=False):
+def create_dataset(file_paths, labels, output_dir):
     """
-    Augments the dataset by creating modified copies of samples.
+    Creates a dataset from FITS files, processes them into augmented images,
+    and saves them as NumPy arrays.
     """
-    if not SKIMAGE_AVAILABLE:
-        logger.warning("scikit-image not available. Skipping dataset augmentation.")
-        return X_image, X_timeseries, y
-
-    if augmentation_factor <= 1:
-        logger.info("Augmentation factor is 1 or less, no augmentation performed.")
-        return X_image, X_timeseries, y
-        
-    logger.info(f"Augmenting dataset. Each selected sample will have a total of {augmentation_factor} versions.")
-
-    augmented_images = list(X_image)
-    augmented_timeseries = list(X_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else []
-    augmented_labels = list(y)
-
-    indices_to_augment = np.arange(len(y))
-    if only_positive_class:
-        indices_to_augment = np.where(y == 1)[0]
+    logger.info(f"Starting dataset creation with {len(file_paths)} files.")
     
-    logger.info(f"Creating {augmentation_factor - 1} new versions for {len(indices_to_augment)} samples.")
+    all_images, all_labels = [], []
 
-    for i in indices_to_augment:
-        for _ in range(augmentation_factor - 1): 
-            aug_img = _augment_single_image(X_image[i])
-            augmented_images.append(aug_img)
+    for i, file_path in enumerate(file_paths):
+        label = labels[i]
+        logger.info(f"Processing file {i+1}/{len(file_paths)}: {os.path.basename(file_path)}")
 
-            if X_timeseries is not None and len(X_timeseries) > 0:
-                aug_ts = _augment_single_timeseries(X_timeseries[i])
-                augmented_timeseries.append(aug_ts)
+        image = _process_fits_file(file_path)
+        if image is not None:
+            augmented_image = _augment_single_image(image)
+            all_images.append(augmented_image)
+            all_labels.append(1 if label == 'confirmed' else 0)
+
+    if not all_images:
+        logger.error("No images were successfully processed. Cannot create dataset.")
+        return
+
+    X = np.array(all_images)
+    y = np.array(all_labels)
+    X = X[..., np.newaxis]
+
+    X_path = os.path.join(output_dir, 'X_data.npy')
+    y_path = os.path.join(output_dir, 'y_labels.npy')
+    np.save(X_path, X)
+    np.save(y_path, y)
+    
+    logger.info(f"Dataset created successfully. Data shape: {X.shape}, Labels shape: {y.shape}")
+    logger.info(f"Saved data to {X_path} and labels to {y_path}")
+
+
+def augment_dataset(X, y, augmentation_factor=2, shift_range=5):
+    """
+    Augments the dataset by creating shifted copies of the minority class samples.
+
+    Args:
+        X (np.ndarray): The feature data.
+        y (np.ndarray): The labels.
+        augmentation_factor (int): The number of augmented samples to create for each minority sample.
+        shift_range (int): The maximum number of timesteps to shift the data.
+
+    Returns:
+        tuple: A tuple containing the augmented X and y arrays.
+    """
+    augmented_X = list(X)
+    augmented_y = list(y)
+    
+    minority_class_indices = np.where(y == 1)[0]
+    
+    for i in minority_class_indices:
+        for _ in range(augmentation_factor):
+            # Create a shifted version of the light curve
+            shift_amount = np.random.randint(-shift_range, shift_range)
+            shifted_sample = shift(X[i], (0, shift_amount), mode='nearest') # Assuming 2D data (samples, timesteps)
             
-            augmented_labels.append(y[i])
-
-    final_X_image = np.array(augmented_images)
-    final_y = np.array(augmented_labels)
-    final_X_timeseries = np.array(augmented_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else None
-
-    class_dist = dict(zip(*np.unique(final_y, return_counts=True)))
-    logger.info(f"Dataset after augmentation: {len(final_y)} examples. Class distribution: {class_dist}")
-
-    return final_X_image, final_X_timeseries, final_y
+            augmented_X.append(shifted_sample)
+            augmented_y.append(y[i])
+            
+    return np.array(augmented_X), np.array(augmented_y)
