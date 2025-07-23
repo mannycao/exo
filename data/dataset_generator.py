@@ -1,153 +1,103 @@
-# In data/dataset_generator.py
-
-import numpy as np
-from imblearn.over_sampling import SMOTE
-from scipy.ndimage import shift
-
-# ... (keep your existing functions in this file)
-
-def balance_dataset(X, y):
-    """
-    Balances the dataset using SMOTE for oversampling the minority class.
-
-    Args:
-        X (np.ndarray): The feature data.
-        y (np.ndarray): The labels.
-
-    Returns:
-        tuple: A tuple containing the balanced X and y arrays.
-    """
-    # Reshape X for SMOTE if it's 3D (e.g., (n_samples, timesteps, features))
-    original_shape = X.shape
-    if len(original_shape) > 2:
-        X_reshaped = X.reshape(original_shape[0], -1)
-    else:
-        X_reshaped = X
-
-    smote = SMOTE(random_state=42)
-    X_resampled, y_resampled = smote.fit_resample(X_reshaped, y)
-
-    # Reshape X back to its original 3D shape if needed
-    if len(original_shape) > 2:
-        X_resampled = X_resampled.reshape(-1, *original_shape[1:])
-
-    return X_resampled, y_resampleda# data/dataset_generator.py
+# data/dataset_generator.py
 
 import logging
 import os
 import numpy as np
 from astropy.io import fits
-from scipy.ndimage import shift
+from imblearn.over_sampling import SMOTE
+from skimage.transform import resize
 
 logger = logging.getLogger(__name__)
 
-def _process_fits_file(file_path):
+def balance_dataset(X, y):
+    """Balances the dataset using SMOTE."""
+    if len(np.unique(y)) < 2:
+        logger.error(f"Cannot balance data with only one class.")
+        return X, y
+    # If X is a list of multiple inputs (for multimodal), balance each one
+    if isinstance(X, list):
+        # Flatten and combine features for balancing strategy calculation
+        X_reshaped_for_smote = np.hstack([arr.reshape(arr.shape[0], -1) for arr in X])
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_reshaped_for_smote, y)
+        
+        # Now, we need to reconstruct the separate input arrays
+        X_balanced = []
+        current_col = 0
+        for arr in X:
+            num_features = np.prod(arr.shape[1:])
+            # Take the corresponding slice and reshape it back to its original feature shape
+            balanced_arr_flat = X_res[:, current_col:current_col + num_features]
+            X_balanced.append(balanced_arr_flat.reshape(len(y_res), *arr.shape[1:]))
+            current_col += num_features
+        return X_balanced, y_res
+    else: # Standard single input
+        X_reshaped = X.reshape(X.shape[0], -1)
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_reshaped, y)
+        return X_res.reshape(len(y_res), *X.shape[1:]), y_res
+
+
+def create_dataset(file_paths, labels, output_dir, image_size=(64, 64)):
     """
-    Reads a FITS file, cleans the light curve data, and converts it into
-    a 2D image representation through phase folding and binning.
+    Creates a multimodal dataset (1D time-series and 2D image) from FITS files.
     """
-    try:
-        with fits.open(file_path, mode='readonly') as hdul:
-            data = hdul[1].data
-            time = data['TIME']
-            flux = data['PDCSAP_FLUX']
-
-            # Clean up NaN/infinite values from the data
-            finite_mask = np.isfinite(time) & np.isfinite(flux)
-            time, flux = time[finite_mask], flux[finite_mask]
-
-            if len(time) == 0:
-                logger.warning(f"No finite data found in {file_path}")
-                return None
-
-            # --- Phase Folding and Binning ---
-            # NOTE: This is a simplified example.
-            period = 10.0  # Placeholder period in days
-            phase = (time % period) / period
-            
-            bins = 256
-            binned_flux, _, _ = np.histogram2d(phase, flux, bins=[bins, bins])
-            
-            if np.max(binned_flux) > np.min(binned_flux):
-                binned_flux = (binned_flux - np.min(binned_flux)) / (np.max(binned_flux) - np.min(binned_flux))
-            
-            return binned_flux.T
-
-    except Exception as e:
-        logger.error(f"Could not process FITS file {file_path}: {e}")
-        return None
-
-def _augment_single_image(image):
-    """Applies simple augmentations to a single image."""
-    if image is None or image.size == 0:
-        return image
-    noise = np.random.normal(0, 0.005 * np.std(image), image.shape)
-    augmented_image = image + noise
-    h_shift, w_shift = np.random.uniform(-1.5, 1.5, 2)
-    augmented_image = shift(augmented_image, (h_shift, w_shift), mode='reflect')
-    return augmented_image
-
-def create_dataset(file_paths, labels, output_dir):
-    """
-    Creates a dataset from FITS files, processes them into augmented images,
-    and saves them as NumPy arrays.
-    """
-    logger.info(f"Starting dataset creation with {len(file_paths)} files.")
+    logger.info(f"Starting multimodal dataset creation with {len(file_paths)} files.")
     
-    all_images, all_labels = [], []
+    all_timeseries = []
+    all_images = []
+    all_labels = []
 
     for i, file_path in enumerate(file_paths):
-        label = labels[i]
-        logger.info(f"Processing file {i+1}/{len(file_paths)}: {os.path.basename(file_path)}")
+        try:
+            with fits.open(file_path, mode='readonly') as hdul:
+                data = hdul[1].data
+                time = data.field('TIME')
+                flux = data.field('PDCSAP_FLUX')
 
-        image = _process_fits_file(file_path)
-        if image is not None:
-            augmented_image = _augment_single_image(image)
-            all_images.append(augmented_image)
-            all_labels.append(1 if label == 'confirmed' else 0)
+                finite_mask = np.isfinite(time) & np.isfinite(flux)
+                time, flux = time[finite_mask], flux[finite_mask]
 
-    if not all_images:
-        logger.error("No images were successfully processed. Cannot create dataset.")
+                if len(time) == 0:
+                    logger.warning(f"Skipping {os.path.basename(file_path)}: No finite data.")
+                    continue
+                
+                # --- 1D Time-Series Preparation ---
+                processed_flux = (flux - np.mean(flux)) / (np.std(flux) if np.std(flux) > 0 else 1)
+                fixed_length = 2048
+                if len(processed_flux) > fixed_length:
+                    processed_flux = processed_flux[:fixed_length]
+                else:
+                    processed_flux = np.pad(processed_flux, (0, fixed_length - len(processed_flux)), 'constant')
+                
+                # --- 2D Image Preparation ---
+                # A simple 2D representation: phase-folded plot
+                period = 10.0 # Placeholder period
+                phase = (time % period) / period
+                binned_image, _, _ = np.histogram2d(phase, flux, bins=image_size[0])
+                # Resize and normalize
+                img = resize(binned_image, image_size, anti_aliasing=True)
+                img = (img - np.min(img)) / (np.max(img) - np.min(img) if np.max(img) > np.min(img) else 1)
+
+                all_timeseries.append(processed_flux)
+                all_images.append(img)
+                all_labels.append(1 if labels[i] == 'confirmed_planet' else 0)
+
+        except Exception as e:
+            logger.error(f"FAILED to process {os.path.basename(file_path)}. Error: {e}. Skipping.")
+
+    if not all_timeseries:
+        logger.error("CRITICAL: No files were successfully processed.")
         return
 
-    X = np.array(all_images)
+    # Convert to NumPy arrays and add channel dimensions
+    X_ts = np.array(all_timeseries)[..., np.newaxis]
+    X_img = np.array(all_images)[..., np.newaxis]
     y = np.array(all_labels)
-    X = X[..., np.newaxis]
 
-    X_path = os.path.join(output_dir, 'X_data.npy')
-    y_path = os.path.join(output_dir, 'y_labels.npy')
-    np.save(X_path, X)
-    np.save(y_path, y)
+    # Save all three arrays
+    np.save(os.path.join(output_dir, 'X_timeseries.npy'), X_ts)
+    np.save(os.path.join(output_dir, 'X_images.npy'), X_img)
+    np.save(os.path.join(output_dir, 'y_labels.npy'), y)
     
-    logger.info(f"Dataset created successfully. Data shape: {X.shape}, Labels shape: {y.shape}")
-    logger.info(f"Saved data to {X_path} and labels to {y_path}")
-
-
-def augment_dataset(X, y, augmentation_factor=2, shift_range=5):
-    """
-    Augments the dataset by creating shifted copies of the minority class samples.
-
-    Args:
-        X (np.ndarray): The feature data.
-        y (np.ndarray): The labels.
-        augmentation_factor (int): The number of augmented samples to create for each minority sample.
-        shift_range (int): The maximum number of timesteps to shift the data.
-
-    Returns:
-        tuple: A tuple containing the augmented X and y arrays.
-    """
-    augmented_X = list(X)
-    augmented_y = list(y)
-    
-    minority_class_indices = np.where(y == 1)[0]
-    
-    for i in minority_class_indices:
-        for _ in range(augmentation_factor):
-            # Create a shifted version of the light curve
-            shift_amount = np.random.randint(-shift_range, shift_range)
-            shifted_sample = shift(X[i], (0, shift_amount), mode='nearest') # Assuming 2D data (samples, timesteps)
-            
-            augmented_X.append(shifted_sample)
-            augmented_y.append(y[i])
-            
-    return np.array(augmented_X), np.array(augmented_y)
+    logger.info(f"Multimodal dataset created successfully with {len(y)} samples.")
