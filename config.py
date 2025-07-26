@@ -21,34 +21,34 @@ DEFAULT_LOG_FILE = RESULTS_DIR / "pipeline_general.log"
 EXOPLANET_ARCHIVE_TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP"
 
 # --- OPTIMIZATION 1: More Sensitive Transit Detection ---
-TRANSIT_SENSITIVITY = 2.0      # Lowered from 3.0 to find more subtle signals
-PROMINENCE_FACTOR = 0.3        # Lowered from 0.5
-MIN_TRANSIT_DURATION = 0.04    # Lowered from 0.05
-MAX_TRANSIT_DURATION = 0.6     # Increased from 0.5
+TRANSIT_SENSITIVITY = 2.0
+PROMINENCE_FACTOR = 0.3
+MIN_TRANSIT_DURATION = 0.04
+MAX_TRANSIT_DURATION = 0.6
 
 # --- Feature Extraction for Multimodal Model ---
 WINDOW_SIZE = 1.0
-IMAGE_SIZE = (64, 64) # Define the size for the 2D image representation
+IMAGE_SIZE = (64, 64)
 
 # --- File Type Constants ---
 FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
 FILE_TYPE_FALSE_POSITIVE = 'false_positive'
 
-# --- OPTIMIZATION 2: Model Training Hyperparameters ---
-EPOCHS = 75 # Increased epochs for more training time
-BATCH_SIZE = 32
-EARLY_STOPPING_PATIENCE = 15
+# --- OPTIMIZATION 2: Model Training Hyperparameters (Updated with your results) ---
+EPOCHS = 15                # From your optimization results
+BATCH_SIZE = 16            # From your optimization results
+EARLY_STOPPING_PATIENCE = 10 # Kept as a sensible default
 
-LEARNING_RATE = 1e-4 # A stable learning rate
+LEARNING_RATE = 0.01       # From your optimization results
 
-# Focal loss parameters to prioritize hard-to-classify examples
+# Focal loss parameters (can still be useful)
 FOCAL_LOSS_ALPHA = 0.25
-FOCAL_LOSS_GAMMA = 2.0
+FOCAL_LOSS_GAMMA = 2.5
 
 # --- Pipeline Execution Parameters ---
 DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 4
 USE_MULTIMODAL = True
 USE_CACHE = True
-AUGMENTATION_FACTOR = 3
+AUGMENTATION_FACTOR = 5 # You can experiment with increasing this for more data
 
 MIN_SNR = 3.0
