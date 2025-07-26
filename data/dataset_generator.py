@@ -1,142 +1,111 @@
-"""
-Functions for data balancing and augmentation to improve model training.
-Uses the 'imbalanced-learn' and 'scikit-image' libraries.
-"""
+# data/dataset_generator.py
+
 import logging
-import skimage
+import os
 import numpy as np
-
-# Use a try-except block for imblearn import as it might not be installed
-try:
-    from imblearn.over_sampling import RandomOverSampler
-    from imblearn.under_sampling import RandomUnderSampler
-    IMBLEARN_AVAILABLE = True
-except ImportError:
-    IMBLEARN_AVAILABLE = False
-    logging.error(
-        "imbalanced-learn library not found. Data balancing will be skipped. "
-        "Please install it (`pip install imbalanced-learn`)."
-    )
-
-# Use a try-except block for scikit-image import
-try:
-    from skimage.transform import shift
-    SKIMAGE_AVAILABLE = True
-except ImportError:
-    SKIMAGE_AVAILABLE = False
-    logging.error(
-        "scikit-image library not found. Image augmentation will be skipped. "
-        "Please install it (`pip install scikit-image`)."
-    )
-
+from astropy.io import fits
+from imblearn.over_sampling import SMOTE
+from skimage.transform import resize
 
 logger = logging.getLogger(__name__)
 
-def balance_dataset(X_image, X_timeseries, y, method='oversample'):
-    """
-    Balances the dataset using specified method from the imbalanced-learn library.
-    """
-    if not IMBLEARN_AVAILABLE:
-        logger.warning("imbalanced-learn not available. Skipping dataset balancing.")
-        return X_image, X_timeseries, y
-
-    logger.info(f"Attempting to balance dataset using '{method}' method.")
+def balance_dataset(X, y):
+    """Balances the dataset using SMOTE."""
+    if len(np.unique(y)) < 2:
+        logger.error(f"Cannot balance data with only one class.")
+        return X, y
     
-    n_samples, height, width = X_image.shape
-    X_image_reshaped = X_image.reshape(n_samples, -1)
-    
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_reshaped = X_timeseries.reshape(n_samples, -1) if X_timeseries.ndim > 1 else X_timeseries.reshape(-1, 1)
-        X_combined = np.concatenate([X_image_reshaped, X_timeseries_reshaped], axis=1)
-    else:
-        X_combined = X_image_reshaped
-
-    sampler = None
-    if method == 'oversample':
-        sampler = RandomOverSampler(random_state=42)
-    elif method == 'undersample':
-        sampler = RandomUnderSampler(random_state=42)
-    else:
-        logger.warning(f"Unknown balancing method: '{method}'. Returning original dataset.")
-        return X_image, X_timeseries, y
-
-    try:
-        X_resampled, y_resampled = sampler.fit_resample(X_combined, y)
-    except ValueError as e:
-        logger.error(f"Error during resampling with method '{method}': {e}. Returning original dataset.")
-        return X_image, X_timeseries, y
+    if isinstance(X, list):
+        # Flatten and combine features for balancing strategy calculation
+        X_reshaped_for_smote = np.hstack([arr.reshape(arr.shape[0], -1) for arr in X])
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_reshaped_for_smote, y)
         
-    image_feature_len = height * width
-    X_image_resampled_flat = X_resampled[:, :image_feature_len]
-    X_image_resampled = X_image_resampled_flat.reshape(-1, height, width)
-    
-    X_timeseries_resampled = None
-    if X_timeseries is not None and len(X_timeseries) > 0:
-        X_timeseries_resampled = X_resampled[:, image_feature_len:]
-    
-    class_dist = dict(zip(*np.unique(y_resampled, return_counts=True)))
-    logger.info(f"Dataset after '{method}' balancing: {len(y_resampled)} samples. Class distribution: {class_dist}")
-    
-    return X_image_resampled, X_timeseries_resampled, y_resampled
+        # Reconstruct the separate input arrays
+        X_balanced = []
+        current_col = 0
+        for arr in X:
+            num_features = np.prod(arr.shape[1:])
+            balanced_arr_flat = X_res[:, current_col:current_col + num_features]
+            X_balanced.append(balanced_arr_flat.reshape(len(y_res), *arr.shape[1:]))
+            current_col += num_features
+        return X_balanced, y_res
+    else: # Standard single input
+        X_reshaped = X.reshape(X.shape[0], -1)
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_reshaped, y)
+        return X_res.reshape(len(y_res), *X.shape[1:]), y_res
 
 
-def _augment_single_timeseries(segment):
-    """Applies simple augmentations to a single timeseries segment."""
-    noise = np.random.normal(0, 0.005 * np.std(segment), segment.shape) 
-    augmented_segment = segment + noise
-    augmented_segment *= np.random.uniform(0.98, 1.02)
-    return augmented_segment
-
-def _augment_single_image(image):
-    """Applies simple augmentations to a single image."""
-    if not SKIMAGE_AVAILABLE: return image 
-    noise = np.random.normal(0, 0.005 * np.std(image), image.shape)
-    augmented_image = image + noise
-    h_shift, w_shift = np.random.uniform(-1.5, 1.5, 2)
-    augmented_image = shift(augmented_image, (h_shift, w_shift), mode='reflect')
-    return augmented_image
-
-
-def augment_dataset(X_image, X_timeseries, y, augmentation_factor=2, only_positive_class=False):
+def create_dataset(file_paths, labels, output_dir, image_size=(64, 64)):
     """
-    Augments the dataset by creating modified copies of samples.
+    Creates a multimodal dataset (1D time-series and 2D image) from FITS files.
     """
-    if not SKIMAGE_AVAILABLE:
-        logger.warning("scikit-image not available. Skipping dataset augmentation.")
-        return X_image, X_timeseries, y
-
-    if augmentation_factor <= 1:
-        logger.info("Augmentation factor is 1 or less, no augmentation performed.")
-        return X_image, X_timeseries, y
-        
-    logger.info(f"Augmenting dataset. Each selected sample will have a total of {augmentation_factor} versions.")
-
-    augmented_images = list(X_image)
-    augmented_timeseries = list(X_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else []
-    augmented_labels = list(y)
-
-    indices_to_augment = np.arange(len(y))
-    if only_positive_class:
-        indices_to_augment = np.where(y == 1)[0]
+    logger.info(f"Starting multimodal dataset creation with {len(file_paths)} files.")
     
-    logger.info(f"Creating {augmentation_factor - 1} new versions for {len(indices_to_augment)} samples.")
+    all_timeseries = []
+    all_images = []
+    all_labels = []
+    
+    FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
 
-    for i in indices_to_augment:
-        for _ in range(augmentation_factor - 1): 
-            aug_img = _augment_single_image(X_image[i])
-            augmented_images.append(aug_img)
+    for i, file_path in enumerate(file_paths):
+        try:
+            with fits.open(file_path, mode='readonly') as hdul:
+                data = hdul[1].data
+                flux = data.field('PDCSAP_FLUX')
 
-            if X_timeseries is not None and len(X_timeseries) > 0:
-                aug_ts = _augment_single_timeseries(X_timeseries[i])
-                augmented_timeseries.append(aug_ts)
-            
-            augmented_labels.append(y[i])
+                finite_mask = np.isfinite(flux)
+                flux = flux[finite_mask]
 
-    final_X_image = np.array(augmented_images)
-    final_y = np.array(augmented_labels)
-    final_X_timeseries = np.array(augmented_timeseries) if X_timeseries is not None and len(X_timeseries) > 0 else None
+                if len(flux) < 100: # Ensure there's enough data
+                    logger.warning(f"Skipping {os.path.basename(file_path)}: Not enough finite data points.")
+                    continue
+                
+                # --- 1D Time-Series Preparation ---
+                # Normalize the entire light curve first
+                flux_norm = (flux - np.median(flux)) / np.std(flux)
+                
+                # For simplicity, we'll take a center chunk of the light curve
+                # A more advanced approach would use the transit detection logic
+                start = max(0, len(flux_norm) // 2 - FIXED_LENGTH // 2)
+                segment = flux_norm[start : start + FIXED_LENGTH]
 
-    class_dist = dict(zip(*np.unique(final_y, return_counts=True)))
-    logger.info(f"Dataset after augmentation: {len(final_y)} examples. Class distribution: {class_dist}")
+                # Pad if segment is shorter than FIXED_LENGTH
+                if len(segment) < FIXED_LENGTH:
+                    segment = np.pad(segment, (0, FIXED_LENGTH - len(segment)), 'constant', constant_values=0)
+                
+                all_timeseries.append(segment)
+                
+                # --- 2D Image Preparation (IMPROVED METHOD) ---
+                # Convert the 1D segment directly into a 2D representation
+                # This preserves the transit shape information
+                img_1d = segment[:image_size[0] * image_size[1]] # Ensure it fits
+                if len(img_1d) < image_size[0] * image_size[1]:
+                    img_1d = np.pad(img_1d, (0, image_size[0] * image_size[1] - len(img_1d)), 'constant', constant_values=0)
+                
+                img_2d = img_1d.reshape(image_size)
 
-    return final_X_image, final_X_timeseries, final_y
+                # Normalize image to [0, 1] for the CNN
+                img_norm = (img_2d - np.min(img_2d)) / (np.max(img_2d) - np.min(img_2d) + 1e-8)
+                
+                all_images.append(img_norm)
+                all_labels.append(1 if labels[i] == 'confirmed_planet' else 0)
+
+        except Exception as e:
+            logger.error(f"FAILED to process {os.path.basename(file_path)}. Error: {e}. Skipping.")
+
+    if not all_timeseries:
+        logger.error("CRITICAL: No files were successfully processed.")
+        return
+
+    # Convert to NumPy arrays and add channel dimensions
+    X_ts = np.array(all_timeseries)
+    X_img = np.array(all_images)[..., np.newaxis]
+    y = np.array(all_labels)
+
+    np.save(os.path.join(output_dir, 'X_timeseries.npy'), X_ts)
+    np.save(os.path.join(output_dir, 'X_images.npy'), X_img)
+    np.save(os.path.join(output_dir, 'y_labels.npy'), y)
+    
+    logger.info(f"Multimodal dataset created successfully with {len(y)} samples.")
