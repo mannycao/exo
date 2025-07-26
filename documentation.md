@@ -144,10 +144,90 @@ To add new visualizations:
 - **CPU Usage**: Parallel processing can utilize multiple CPU cores, configure `max_workers` accordingly
 - **GPU Acceleration**: TensorFlow models can utilize GPU acceleration if available
 
-## Future Improvements
+***
 
-1. **Real-time Processing**: Implement streaming processing for real-time analysis
-2. **Transfer Learning**: Add transfer learning capabilities for adapting to new missions
-3. **Ensemble Methods**: Implement ensemble methods for improved detection accuracy
-4. **Interactive Dashboard**: Create an interactive web dashboard for exploring results
-5. **Anomaly Detection**: Add anomaly detection for identifying unusual transit events
+### `documentation.md` (New and Comprehensive)
+
+This file provides the detailed explanation of the project's methodology, terminology, and full usage instructions.
+
+```markdown
+# Exoplanet Detection Pipeline: Detailed Documentation
+
+This document provides a comprehensive overview of the exoplanet detection pipeline, including its motivation, methodology, usage, and key terminology.
+
+---
+
+## 1. Motivation
+
+The search for exoplanets is one of the most exciting frontiers in modern astronomy. The transit method, which detects the slight dimming of a star as a planet passes in front of it, has been incredibly successful but produces vast amounts of data. The primary challenge is sifting through millions of light curves to distinguish the faint, rare signals of true exoplanets from instrumental noise and astrophysical false positives.
+
+This project was motivated by the need for an automated, reliable, and scalable tool to perform this classification. By leveraging deep learning, specifically a multimodal approach, we aim to create a model that can learn the subtle features of a true planetary transit more effectively than traditional algorithms, thereby accelerating the pace of exoplanet discovery.
+
+---
+
+## 2. Glossary of Terms
+
+-   **Light Curve**: A graph of a star's brightness (flux) over time. This is the primary data source.
+-   **Transit**: The event where an exoplanet passes in front of its host star from our point of view, causing a periodic dip in the star's light curve.
+-   **False Positive**: A signal in a light curve that mimics a transit but is caused by other phenomena, such as an eclipsing binary star system or instrumental noise.
+-   **Multimodal Model**: A neural network that accepts and processes multiple types of data (modalities) simultaneously. In this project, we use both the 1D time-series of the light curve and a 2D image representation of it.
+-   **Class Imbalance**: A common problem in this domain where the number of non-planet examples (false positives, noise) vastly outnumbers the true planet examples.
+-   **Precision**: A performance metric that answers: "Of all the candidates the model flagged as planets, what percentage were actually planets?" High precision is crucial for avoiding wasted follow-up observations.
+-   **Recall**: A performance metric that answers: "Of all the real planets in the dataset, what percentage did the model successfully find?"
+-   **Focal Loss**: A specialized loss function designed to handle class imbalance by focusing the model's training on harder-to-classify examples.
+-   **Classification Threshold**: The probability value (between 0 and 1) used to convert a model's continuous output into a binary decision (planet vs. not a planet). A lower threshold increases recall, while a higher one increases precision.
+
+---
+
+## 3. Methodology & Pipeline Explanation
+
+The pipeline is designed as a modular, end-to-end workflow. Here are the key stages:
+
+### Stage 1: Data Ingestion
+-   **Script**: `data/real_data_fetcher.py`
+-   **Process**: The pipeline begins by scanning user-provided local directories for `.fits` files. It identifies files in the `planets_dir` as the positive class (1) and files in the `false_positives_dir` as the negative class (0).
+
+### Stage 2: Data Preparation & Feature Engineering
+-   **Script**: `data/dataset_generator.py`
+-   **Process**: Each `.fits` file is loaded and preprocessed. A fixed-length segment of the normalized flux is extracted. This 1D segment serves two purposes:
+    1.  It is used directly as the input for the 1D time-series branch of the model.
+    2.  It is reshaped into a 2D image (e.g., 64x64) to serve as the input for the 2D image branch. This allows the model to learn spatial features from the transit's shape.
+-   The processed data is saved as NumPy arrays (`X_images.npy`, `X_timeseries.npy`, `y_labels.npy`).
+
+### Stage 3: Dataset Balancing
+-   **Script**: `data/dataset_generator.py`
+-   **Process**: Before training, the dataset is balanced using SMOTE (Synthetic Minority Over-sampling Technique). This creates synthetic examples of the minority class (planets) to prevent the model from becoming biased towards the majority class (false positives).
+
+### Stage 4: Model Architecture
+-   **Script**: `models/multimodal_model.py`
+-   **Process**: The model is a multi-input neural network with two parallel branches:
+    1.  **Image Branch**: A 2D Convolutional Neural Network (CNN) that processes the 2D image representation of the light curve to learn spatial features.
+    2.  **Time-Series Branch**: A 1D CNN that processes the 1D light curve segment to learn temporal features.
+-   The outputs of these two branches are flattened, concatenated, and passed through a series of dense layers to produce a final classification probability.
+
+### Stage 5: Model Training
+-   **Script**: `models/model_trainer.py`
+-   **Process**: The model is trained using the prepared dataset. Several key techniques are employed:
+    -   **Focal Loss**: Used to combat class imbalance.
+    -   **Class Weights**: Also used to force the model to pay more attention to the minority (planet) class.
+    -   **Adam Optimizer**: An efficient and standard optimizer for deep learning.
+    -   **Callbacks**: `EarlyStopping` is used to prevent overfitting by stopping the training when validation performance no longer improves, and `ModelCheckpoint` saves the best version of the model.
+
+### Stage 6: Evaluation & Reporting
+-   **Scripts**: `pipeline/report_generator.py`, `utils/metrics.py`
+-   **Process**: After training, the model's performance is evaluated on the held-out validation set. A detailed HTML report is generated, including key metrics (precision, recall, accuracy) and learning curve plots.
+
+---
+
+## 4. Full Usage Guide
+
+### Setup
+Ensure you have created a virtual environment and installed the dependencies from `requirements.txt`.
+
+### A. Main Training Run
+This is the primary workflow for training your best model using your full, curated dataset.
+
+```bash
+python main.py \
+    --planets_dir /path/to/your/confirmed_planets \
+    --false_positives_dir /path/to/your/false_positives

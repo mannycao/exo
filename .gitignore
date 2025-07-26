@@ -1,2 +1,3 @@
 venv/
 results/
+data/metadata/kepler_observation_list.pkl
