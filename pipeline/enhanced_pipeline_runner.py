@@ -8,7 +8,6 @@ from pathlib import Path
 
 import config
 from data.dataset_generator import create_dataset, balance_dataset
-# --- OPTIMIZATION 3: Import the Multimodal Model ---
 from models.multimodal_model import build_multimodal_fusion_model
 from models.model_trainer import train_enhanced_model
 from pipeline.report_generator import generate_report
@@ -46,11 +45,9 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         logger.error(f"Dataset contains only one class. Cannot train model.")
         return {'error': 'Single class dataset'}
 
-    # --- Balance both sets of features simultaneously ---
     logger.info("Balancing the multimodal dataset...")
     [X_ts, X_img], y = balance_dataset([X_ts, X_img], y)
     
-    # Split the data for training and validation
     X_ts_train, X_ts_val, X_img_train, X_img_val, y_train, y_val = train_test_split(
         X_ts, X_img, y, test_size=0.2, random_state=42, stratify=y
     )
@@ -63,16 +60,18 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
 
     logger.info("Training the multimodal model...")
     
-    # The trainer needs to receive a list of inputs for X
+    # --- THIS IS THE FIX ---
+    # The order of inputs now matches the model definition: image first, then time-series.
     model, history = train_enhanced_model(
         model=model,
         model_name="exo_multimodal_model",
-        X_train=[X_ts_train, X_img_train], # Pass both datasets as a list
+        X_train=[X_img_train, X_ts_train], # Correct order
         y_train=y_train,
-        X_val=[X_ts_val, X_img_val],     # Pass both validation sets as a list
+        X_val=[X_img_val, X_ts_val],     # Correct order
         y_val=y_val,
         output_dir=result_dir
     )
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^
     
     pipeline_results = {
         'result_dir_actual': str(result_dir),

@@ -18,7 +18,6 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d]
 DEFAULT_LOG_FILE = RESULTS_DIR / "pipeline_general.log"
 
 # --- Data Fetching ---
-# (These are not used by the local data pipeline but are good to keep)
 EXOPLANET_ARCHIVE_TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP"
 
 # --- OPTIMIZATION 1: More Sensitive Transit Detection ---
@@ -47,10 +46,9 @@ FOCAL_LOSS_ALPHA = 0.25
 FOCAL_LOSS_GAMMA = 2.0
 
 # --- Pipeline Execution Parameters ---
-# (These are not used by the main.py runner but are good to keep)
 DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 4
 USE_MULTIMODAL = True
 USE_CACHE = True
-AUGMENTATION_FACTOR = 2
+AUGMENTATION_FACTOR = 3
 
 MIN_SNR = 3.0

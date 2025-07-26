@@ -14,19 +14,18 @@ def balance_dataset(X, y):
     if len(np.unique(y)) < 2:
         logger.error(f"Cannot balance data with only one class.")
         return X, y
-    # If X is a list of multiple inputs (for multimodal), balance each one
+    
     if isinstance(X, list):
         # Flatten and combine features for balancing strategy calculation
         X_reshaped_for_smote = np.hstack([arr.reshape(arr.shape[0], -1) for arr in X])
         smote = SMOTE(random_state=42)
         X_res, y_res = smote.fit_resample(X_reshaped_for_smote, y)
         
-        # Now, we need to reconstruct the separate input arrays
+        # Reconstruct the separate input arrays
         X_balanced = []
         current_col = 0
         for arr in X:
             num_features = np.prod(arr.shape[1:])
-            # Take the corresponding slice and reshape it back to its original feature shape
             balanced_arr_flat = X_res[:, current_col:current_col + num_features]
             X_balanced.append(balanced_arr_flat.reshape(len(y_res), *arr.shape[1:]))
             current_col += num_features
@@ -47,40 +46,50 @@ def create_dataset(file_paths, labels, output_dir, image_size=(64, 64)):
     all_timeseries = []
     all_images = []
     all_labels = []
+    
+    FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
 
     for i, file_path in enumerate(file_paths):
         try:
             with fits.open(file_path, mode='readonly') as hdul:
                 data = hdul[1].data
-                time = data.field('TIME')
                 flux = data.field('PDCSAP_FLUX')
 
-                finite_mask = np.isfinite(time) & np.isfinite(flux)
-                time, flux = time[finite_mask], flux[finite_mask]
+                finite_mask = np.isfinite(flux)
+                flux = flux[finite_mask]
 
-                if len(time) == 0:
-                    logger.warning(f"Skipping {os.path.basename(file_path)}: No finite data.")
+                if len(flux) < 100: # Ensure there's enough data
+                    logger.warning(f"Skipping {os.path.basename(file_path)}: Not enough finite data points.")
                     continue
                 
                 # --- 1D Time-Series Preparation ---
-                processed_flux = (flux - np.mean(flux)) / (np.std(flux) if np.std(flux) > 0 else 1)
-                fixed_length = 2048
-                if len(processed_flux) > fixed_length:
-                    processed_flux = processed_flux[:fixed_length]
-                else:
-                    processed_flux = np.pad(processed_flux, (0, fixed_length - len(processed_flux)), 'constant')
+                # Normalize the entire light curve first
+                flux_norm = (flux - np.median(flux)) / np.std(flux)
                 
-                # --- 2D Image Preparation ---
-                # A simple 2D representation: phase-folded plot
-                period = 10.0 # Placeholder period
-                phase = (time % period) / period
-                binned_image, _, _ = np.histogram2d(phase, flux, bins=image_size[0])
-                # Resize and normalize
-                img = resize(binned_image, image_size, anti_aliasing=True)
-                img = (img - np.min(img)) / (np.max(img) - np.min(img) if np.max(img) > np.min(img) else 1)
+                # For simplicity, we'll take a center chunk of the light curve
+                # A more advanced approach would use the transit detection logic
+                start = max(0, len(flux_norm) // 2 - FIXED_LENGTH // 2)
+                segment = flux_norm[start : start + FIXED_LENGTH]
 
-                all_timeseries.append(processed_flux)
-                all_images.append(img)
+                # Pad if segment is shorter than FIXED_LENGTH
+                if len(segment) < FIXED_LENGTH:
+                    segment = np.pad(segment, (0, FIXED_LENGTH - len(segment)), 'constant', constant_values=0)
+                
+                all_timeseries.append(segment)
+                
+                # --- 2D Image Preparation (IMPROVED METHOD) ---
+                # Convert the 1D segment directly into a 2D representation
+                # This preserves the transit shape information
+                img_1d = segment[:image_size[0] * image_size[1]] # Ensure it fits
+                if len(img_1d) < image_size[0] * image_size[1]:
+                    img_1d = np.pad(img_1d, (0, image_size[0] * image_size[1] - len(img_1d)), 'constant', constant_values=0)
+                
+                img_2d = img_1d.reshape(image_size)
+
+                # Normalize image to [0, 1] for the CNN
+                img_norm = (img_2d - np.min(img_2d)) / (np.max(img_2d) - np.min(img_2d) + 1e-8)
+                
+                all_images.append(img_norm)
                 all_labels.append(1 if labels[i] == 'confirmed_planet' else 0)
 
         except Exception as e:
@@ -91,11 +100,10 @@ def create_dataset(file_paths, labels, output_dir, image_size=(64, 64)):
         return
 
     # Convert to NumPy arrays and add channel dimensions
-    X_ts = np.array(all_timeseries)[..., np.newaxis]
+    X_ts = np.array(all_timeseries)
     X_img = np.array(all_images)[..., np.newaxis]
     y = np.array(all_labels)
 
-    # Save all three arrays
     np.save(os.path.join(output_dir, 'X_timeseries.npy'), X_ts)
     np.save(os.path.join(output_dir, 'X_images.npy'), X_img)
     np.save(os.path.join(output_dir, 'y_labels.npy'), y)
