@@ -73,12 +73,11 @@ def run_kfold_cross_validation(light_curve_files, n_splits=5, threshold=0.5):
         optimizer = tf.keras.optimizers.Adam(learning_rate=config.LEARNING_RATE)
         model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
 
-        # Apply the class weights during training
         model.fit(
             [X_img_train, X_ts_train], y_train,
             epochs=config.EPOCHS, batch_size=config.BATCH_SIZE,
             validation_data=([X_img_val, X_ts_val], y_val),
-            class_weight=class_weight_dict, 
+            class_weight=class_weight_dict, # Apply the class weights here
             verbose=0,
             callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)]
         )
