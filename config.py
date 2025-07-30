@@ -35,11 +35,11 @@ FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
 FILE_TYPE_FALSE_POSITIVE = 'false_positive'
 
 # --- OPTIMIZATION 2: Model Training Hyperparameters (Updated with your results) ---
-EPOCHS = 50                # From your optimization results
+EPOCHS = 25                # From your optimization results
 BATCH_SIZE = 16            # From your optimization results
 EARLY_STOPPING_PATIENCE = 10 # Kept as a sensible default
 
-LEARNING_RATE = 0.01      # From your optimization results
+LEARNING_RATE = 0.01       # From your optimization results
 
 # Focal loss parameters (can still be useful)
 FOCAL_LOSS_ALPHA = 0.25
