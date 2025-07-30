@@ -35,7 +35,7 @@ FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
 FILE_TYPE_FALSE_POSITIVE = 'false_positive'
 
 # --- OPTIMIZATION 2: Model Training Hyperparameters (Updated with your results) ---
-EPOCHS = 15                # From your optimization results
+EPOCHS = 25                # From your optimization results
 BATCH_SIZE = 16            # From your optimization results
 EARLY_STOPPING_PATIENCE = 10 # Kept as a sensible default
 
@@ -49,6 +49,6 @@ FOCAL_LOSS_GAMMA = 2.5
 DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 4
 USE_MULTIMODAL = True
 USE_CACHE = True
-AUGMENTATION_FACTOR = 5 # You can experiment with increasing this for more data
+AUGMENTATION_FACTOR = 6 # You can experiment with increasing this for more data
 
-MIN_SNR = 3.0
+MIN_SNR = 3

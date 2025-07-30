@@ -15,8 +15,8 @@ def build_multimodal_fusion_model(image_shape, timeseries_shape, num_classes=1):
     using the optimized hyperparameters.
     """
     # --- Architectural Hyperparameters from Tuning ---
-    DENSE_NEURONS = 256
-    DROPOUT_RATE = 0.4
+    DENSE_NEURONS = 64
+    DROPOUT_RATE = 0.3
     # ---
 
     # --- Image branch (CNN) ---
