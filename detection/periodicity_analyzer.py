@@ -6,8 +6,33 @@ import logging
 import numpy as np
 import pandas as pd
 from astropy.timeseries import LombScargle
+from .periodicity_filters import validate_period_detection, get_period_quality_metrics
+from utils.visualization import visualize_periodicity_analysis
+from analysis.period_statistics import generate_analysis_report
+import os
 
 logger = logging.getLogger(__name__)
+
+# Global list to collect results for statistical analysis
+_period_results = []
+
+def clear_period_results():
+    """Clear the global results list."""
+    global _period_results
+    _period_results = []
+
+def get_period_results():
+    """Get the current list of period results."""
+    return _period_results.copy()
+
+def generate_period_statistics(output_dir="results/period_analysis"):
+    """Generate statistical analysis of all period detections."""
+    if not _period_results:
+        logger.warning("No period results available for statistical analysis")
+        return None
+        
+    os.makedirs(output_dir, exist_ok=True)
+    return generate_analysis_report(_period_results, output_dir)
 
 def analyze_periodicity(time, flux, transit_info):
     """
@@ -29,33 +54,112 @@ def analyze_periodicity(time, flux, transit_info):
     try:
         # Use Lomb-Scargle on the transit times themselves
         # Frequencies can be auto-determined
-        ls = LombScargle(transit_times, 1) # Using a dummy y=1 as we only care about times
-        frequency, power = ls.autopower(minimum_frequency=0.05, maximum_frequency=1.0) # Search for periods from 1 to 20 days
+        # Create time series for Lomb-Scargle
+        # Instead of using dummy y=1 values, we want to emphasize the transit events
+        # by setting y=1 at transit times and y=0 elsewhere
+        duration = max(transit_times) - min(transit_times)
+        times = np.linspace(min(transit_times), max(transit_times), 1000)
+        y = np.zeros_like(times)
         
-        # Find the peak periods
-        best_frequency = frequency[np.argmax(power)]
+        # Mark each transit with a 1, using a small window
+        window = duration / 100  # Small enough to avoid aliasing but large enough to be detected
+        for t in transit_times:
+            y[(times >= t - window/2) & (times <= t + window/2)] = 1
+            
+        ls = LombScargle(times, y)
+        
+        # Search for periods from 0.5 to 200 days
+        frequency, power = ls.autopower(
+            minimum_frequency=1/200,  # 200 days maximum period
+            maximum_frequency=2.0,    # 0.5 days minimum period
+            samples_per_peak=10)      # Ensure good frequency sampling
+        
+        # Find the peak periods and calculate confidence metrics
+        peak_power_idx = np.argmax(power)
+        best_frequency = frequency[peak_power_idx]
         best_period = 1.0 / best_frequency
         
-        # You could also find multiple significant peaks if needed
-        # from scipy.signal import find_peaks
-        # peaks, _ = find_peaks(power, height=0.1) # Example: peaks with power > 0.1
-        # peak_periods = 1.0 / frequency[peaks] if len(peaks) > 0 else []
+        # Calculate False Alarm Probability (FAP)
+        fap = ls.false_alarm_probability(power[peak_power_idx])
+        
+        # Calculate power significance
+        mean_power = np.mean(power)
+        power_snr = power[peak_power_idx] / mean_power
+        
+        # Calculate signal-to-noise ratio of the peak
+        # Use local noise level (standard deviation of power in window around peak)
+        window = 5  # Points on each side
+        start_idx = max(0, peak_power_idx - window)
+        end_idx = min(len(power), peak_power_idx + window + 1)
+        local_noise = np.std(power[start_idx:end_idx])
+        peak_snr = power[peak_power_idx] / local_noise if local_noise > 0 else 0
+        
+        # Calculate confidence score (0-1) based on multiple metrics
+        confidence_score = (1 - fap) * np.minimum(1.0, power_snr / 10) * np.minimum(1.0, peak_snr / 5)
 
         periodogram_data = {
             'period': (1.0 / frequency).tolist(),
             'power': power.tolist(),
             'best_period': best_period,
-            'peak_periods': [best_period] # Storing the best one as a list for consistency
+            'peak_periods': [best_period],
+            'fap': float(fap),
+            'power_snr': float(power_snr),
+            'peak_snr': float(peak_snr),
+            'confidence_score': float(confidence_score)
         }
         
         # For this function, let's assume it primarily finds the period.
         # We can calculate a median period if multiple peaks were found, but best_period is often sufficient.
         
-        logger.info(f"Periodicity analysis found best period: {best_period:.4f} days.")
-        return {
-            'median_period': best_period, # Use 'best_period' as the representative median
-            'periodogram': periodogram_data
+        # Get quality metrics and validate the detection
+        quality_metrics = get_period_quality_metrics(periodogram_data)
+        data_span = max(transit_times) - min(transit_times)
+        is_valid, reason, adjusted_confidence = validate_period_detection(
+            periodogram_data,
+            data_span=data_span
+        )
+        
+        # Update confidence score with validation results
+        confidence_score = adjusted_confidence
+        periodogram_data['confidence_score'] = float(confidence_score)
+        periodogram_data.update(quality_metrics)
+        
+        # Generate visualization if period is potentially valid
+        if confidence_score > 0.3:  # Low threshold for visualization
+            try:
+                output_dir = "results/periodicity_analysis"
+                import os
+                os.makedirs(output_dir, exist_ok=True)
+                visualize_periodicity_analysis(
+                    periodogram_data,
+                    title=f"Period: {best_period:.2f} days (Confidence: {confidence_score:.2f})",
+                    filename=f"periodogram_{len(transit_times)}_transits.png",
+                    output_dir=output_dir
+                )
+            except Exception as e:
+                logger.warning(f"Failed to generate periodicity visualization: {e}")
+        
+        # Log results with validation info
+        if is_valid:
+            logger.info(f"Valid period detected: {best_period:.4f} days (confidence: {confidence_score:.2f})")
+        else:
+            logger.warning(f"Potential period {best_period:.4f} days marked as invalid: {reason} (confidence: {confidence_score:.2f})")
+        
+        result = {
+            'median_period': best_period,
+            'confidence': confidence_score,
+            'validation': {'is_valid': is_valid, 'reason': reason},
+            'quality_metrics': quality_metrics,
+            'periodogram': periodogram_data,
+            'data_span': data_span,
+            'n_transits': len(transit_times),
+            'transit_times': transit_times.tolist()
         }
+        
+        # Add to global results list for statistical analysis
+        _period_results.append(result)
+        
+        return result
 
     except Exception as e:
         logger.error(f"Error during Lomb-Scargle periodogram analysis: {e}", exc_info=True)

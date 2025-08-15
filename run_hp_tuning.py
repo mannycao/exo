@@ -5,6 +5,8 @@ import argparse
 import numpy as np
 import pandas as pd
 import random
+import json
+from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -109,7 +111,7 @@ def main():
             best_score = avg_score
             best_params = params
 
-    # --- Step 4: Display Final Results ---
+    # --- Step 4: Display and Save Final Results ---
     logger.info("\n" + "="*50)
     logger.info("Hyperparameter Optimization Finished")
     logger.info("="*50)
@@ -117,6 +119,17 @@ def main():
     logger.info("Best parameters found:")
     for param, value in best_params.items():
         logger.info(f"  {param}: {value}")
+
+    # Save best params and score to results/best_hp_params.json
+    results_dir = Path("results")
+    results_dir.mkdir(exist_ok=True)
+    best_result = {
+        "best_validation_accuracy": float(best_score),
+        "best_params": best_params
+    }
+    with open(results_dir / "best_hp_params.json", "w") as f:
+        json.dump(best_result, f, indent=2)
+    logger.info(f"Best hyperparameters saved to {results_dir / 'best_hp_params.json'}")
 
 if __name__ == "__main__":
     main()

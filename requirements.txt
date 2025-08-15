@@ -1,0 +1,10 @@
+tensorflow
+tensorflow-probability
+scikit-learn
+pandas
+numpy
+seaborn
+matplotlib
+astroquery
+tf-keras
+batman-package

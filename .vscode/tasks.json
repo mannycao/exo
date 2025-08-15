@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Run Fusion Pipeline Full Debug",
+			"command": "python run_fusion_pipeline.py --log_level DEBUG",
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
+}

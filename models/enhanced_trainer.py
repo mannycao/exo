@@ -35,6 +35,8 @@ def focal_loss(gamma=2., alpha=.25):
         """
         from tensorflow.keras import backend as K
         
+        # Ensure y_true is float32 for type compatibility
+        y_true = K.cast(y_true, 'float32')
         # Clip to prevent numerical instability
         epsilon = K.epsilon()
         y_pred = K.clip(y_pred, epsilon, 1.0 - epsilon)

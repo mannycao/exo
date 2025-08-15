@@ -1,98 +1,238 @@
-# pipeline/enhanced_pipeline_runner.py
-
-import logging
-import os
+import tensorflow as tf
+import tensorflow_probability as tfp
 import numpy as np
-from sklearn.model_selection import train_test_split
-from pathlib import Path
+import os
+import time
+import argparse
 
-import config
-from data.dataset_generator import create_dataset, balance_dataset
-from models.multimodal_model import build_multimodal_fusion_model
-from models.model_trainer import train_enhanced_model
-from pipeline.report_generator import generate_report
+# Use TF Probability's alias for distributions
+tfd = tfp.distributions
 
-logger = logging.getLogger(__name__)
+# For reproducibility
+np.random.seed(42)
+tf.random.set_seed(42)
 
-def run_enhanced_pipeline(light_curve_files, output_dir_str):
-    """
-    The core pipeline, now upgraded for multimodal data processing and training.
-    """
-    result_dir = Path(output_dir_str)
-    logger.info(f"Enhanced multimodal pipeline runner started. Saving results to {result_dir}")
+# ==============================================================================
+# 1. DUMMY IMPLEMENTATIONS & CONFIG
+# ==============================================================================
 
-    processed_data_dir = result_dir / "processed_data"
-    os.makedirs(processed_data_dir, exist_ok=True)
-    
-    logger.info("Creating the multimodal dataset (time-series and images)...")
-    create_dataset(
-        file_paths=[item['file_path'] for item in light_curve_files],
-        labels=[item['type'] for item in light_curve_files],
-        output_dir=processed_data_dir,
-        image_size=config.IMAGE_SIZE
-    )
-    
-    logger.info("Loading multimodal dataset for training...")
-    try:
-        X_ts = np.load(processed_data_dir / 'X_timeseries.npy')
-        X_img = np.load(processed_data_dir / 'X_images.npy')
-        y = np.load(processed_data_dir / 'y_labels.npy')
-    except FileNotFoundError:
-        logger.error("Could not find multimodal dataset files. Aborting.")
-        return None
+class DummyConfig:
+    """Simulates your config.py file."""
+    LC_IMAGE_SHAPE = (64, 64, 1)
+    LC_TIMESERIES_SHAPE = (2048,)
+    TTV_DIM = 12
+    RV_DIM = 8
+    NUM_SAMPLES = 2000 
+    TEST_SPLIT_FRACTION = 0.2
+    LEARNING_RATE = 0.0001
+    EPOCHS = 30 
+    BATCH_SIZE = 32
+    NUM_MC_SAMPLES = 50
+    GRADIENT_CLIP_NORM = 1.0
+    KL_WEIGHT = 0.01 
 
-    if len(np.unique(y)) < 2:
-        logger.error(f"Dataset contains only one class. Cannot train model.")
-        return {'error': 'Single class dataset'}
+def load_and_preprocess_data(cfg):
+    """Simulates data loading."""
+    print("Generating dummy data for demonstration...")
+    X_lc_timeseries = np.random.randn(cfg.NUM_SAMPLES, cfg.LC_TIMESERIES_SHAPE[0]).astype(np.float32)
+    X_lc_image = np.random.randn(cfg.NUM_SAMPLES, *cfg.LC_IMAGE_SHAPE).astype(np.float32)
+    X_ttv = np.random.randn(cfg.NUM_SAMPLES, cfg.TTV_DIM).astype(np.float32)
+    X_rv = np.random.randn(cfg.NUM_SAMPLES, cfg.RV_DIM).astype(np.float32)
+    y = np.random.randint(0, 2, size=cfg.NUM_SAMPLES).astype(np.float32)
+    return (X_lc_timeseries, X_lc_image, X_ttv, X_rv), y
 
-    logger.info("Balancing the multimodal dataset...")
-    [X_ts, X_img], y = balance_dataset([X_ts, X_img], y)
-    
-    X_ts_train, X_ts_val, X_img_train, X_img_val, y_train, y_val = train_test_split(
-        X_ts, X_img, y, test_size=0.2, random_state=42, stratify=y
-    )
+# ==============================================================================
+# 2. MODEL DEFINITION (NEW UNIFIED, END-TO-END APPROACH)
+# ==============================================================================
 
-    logger.info("Building the multimodal fusion model...")
-    model = build_multimodal_fusion_model(
-        image_shape=X_img_train.shape[1:],
-        timeseries_shape=X_ts_train.shape[1:]
-    )
+def negative_log_likelihood(y_true, logits):
+    """Calculates NLL from logits and labels."""
+    y_true = tf.cast(y_true, logits.dtype)
+    dist = tfd.Independent(tfd.Bernoulli(logits=logits), reinterpreted_batch_ndims=1)
+    return -tf.reduce_mean(dist.log_prob(y_true))
 
-    logger.info("Training the multimodal model...")
-    
-    # --- THIS IS THE FIX ---
-    # The order of inputs now matches the model definition: image first, then time-series.
-    model, history = train_enhanced_model(
-        model=model,
-        model_name="exo_multimodal_model",
-        X_train=[X_img_train, X_ts_train], # Correct order
-        y_train=y_train,
-        X_val=[X_img_val, X_ts_val],     # Correct order
-        y_val=y_val,
-        output_dir=result_dir
-    )
-    # ^^^^^^^^^^^^^^^^^^^^^^^^^
-    
-    pipeline_results = {
-        'result_dir_actual': str(result_dir),
-        'successfully_processed_count': len(light_curve_files),
-        'transit_count': -1
-    }
+class UnifiedMultiModalBNN(tf.keras.Model):
+    def __init__(self, cfg):
+        super(UnifiedMultiModalBNN, self).__init__()
+        self.cfg = cfg
+        
+        # --- Define ALL layers of the model from scratch ---
+        
+        # Timeseries Branch Layers (now trainable)
+        self.reshape_ts = tf.keras.layers.Reshape((cfg.LC_TIMESERIES_SHAPE[0], 1))
+        self.conv1d = tf.keras.layers.Conv1D(16, 5, activation='relu')
+        self.bn_ts1 = tf.keras.layers.BatchNormalization()
+        self.pool_ts1 = tf.keras.layers.MaxPooling1D(2)
+        self.conv1d_1 = tf.keras.layers.Conv1D(32, 5, activation='relu')
+        self.bn_ts2 = tf.keras.layers.BatchNormalization()
+        self.pool_ts2 = tf.keras.layers.MaxPooling1D(2)
+        self.flatten_ts = tf.keras.layers.Flatten()
+        self.dense_ts = tf.keras.layers.Dense(32, activation='relu')
+        self.dropout_ts = tf.keras.layers.Dropout(0.2)
 
-    if history:
-        model_results = {
-            'cnn_model': model,
-            'cnn_history': history.history,
-            'cnn_metrics': {k: v[-1] for k, v in history.history.items()}
-        }
-        report_results = [{'file_path': item['file_path'], 'success': True} for item in light_curve_files]
-        report_path = generate_report(
-            results=report_results,
-            model_results=model_results,
-            timestamp=result_dir.name.replace("run_", ""),
-            output_dir=str(result_dir)
+        # Image Branch Layers (now trainable)
+        self.conv2d = tf.keras.layers.Conv2D(16, (3,3), activation='relu')
+        self.bn_img1 = tf.keras.layers.BatchNormalization()
+        self.pool_img1 = tf.keras.layers.MaxPooling2D(2)
+        self.conv2d_1 = tf.keras.layers.Conv2D(32, (3,3), activation='relu')
+        self.bn_img2 = tf.keras.layers.BatchNormalization()
+        self.pool_img2 = tf.keras.layers.MaxPooling2D(2)
+        self.flatten_img = tf.keras.layers.Flatten()
+        self.dense_img = tf.keras.layers.Dense(32, activation='relu')
+        self.dropout_img = tf.keras.layers.Dropout(0.2)
+        
+        # TTV and RV MLPs
+        self.ttv_mlp = tf.keras.Sequential([
+            tf.keras.layers.Input(shape=(cfg.TTV_DIM,)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(16, activation='relu')
+        ])
+        self.rv_mlp = tf.keras.Sequential([
+            tf.keras.layers.Input(shape=(cfg.RV_DIM,)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(16, activation='relu')
+        ])
+        
+        # Fusion and Bayesian Head
+        self.concatenate = tf.keras.layers.Concatenate()
+        self.bnn_dense1 = tfp.layers.DenseFlipout(128, activation='relu')
+        self.bnn_dense2 = tfp.layers.DenseFlipout(64, activation='relu')
+        self.bnn_logits = tfp.layers.DenseFlipout(1)
+        
+        print("✅ Unified, end-to-end trainable model defined.")
+
+    def call(self, inputs):
+        """Defines the forward pass."""
+        input_timeseries, input_image, input_ttv, input_rv = inputs
+        
+        x_ts = self.reshape_ts(input_timeseries)
+        x_ts = self.conv1d(x_ts)
+        x_ts = self.bn_ts1(x_ts)
+        x_ts = self.pool_ts1(x_ts)
+        x_ts = self.conv1d_1(x_ts)
+        x_ts = self.bn_ts2(x_ts)
+        x_ts = self.pool_ts2(x_ts)
+        x_ts = self.flatten_ts(x_ts)
+        x_ts = self.dense_ts(x_ts)
+        features_ts = self.dropout_ts(x_ts)
+        
+        x_img = self.conv2d(input_image)
+        x_img = self.bn_img1(x_img)
+        x_img = self.pool_img1(x_img)
+        x_img = self.conv2d_1(x_img)
+        x_img = self.bn_img2(x_img)
+        x_img = self.pool_img2(x_img)
+        x_img = self.flatten_img(x_img)
+        x_img = self.dense_img(x_img)
+        features_img = self.dropout_img(x_img)
+        
+        features_ttv = self.ttv_mlp(input_ttv)
+        features_rv = self.rv_mlp(input_rv)
+        
+        concatenated_features = self.concatenate(
+            [features_ts, features_img, features_ttv, features_rv]
         )
-        pipeline_results['report_path'] = str(report_path)
+        
+        x = self.bnn_dense1(concatenated_features)
+        x = self.bnn_dense2(x)
+        logits = self.bnn_logits(x)
+        
+        return logits
+    
+    def kl_loss(self):
+        """
+        Manually calculates the KL divergence from the Bayesian layers.
+        This is the most robust way to ensure the KL loss is calculated.
+        """
+        return (self.bnn_dense1.kernel_divergence +
+                self.bnn_dense2.kernel_divergence +
+                self.bnn_logits.kernel_divergence)
 
-    logger.info(f"Enhanced multimodal pipeline finished successfully.")
-    return pipeline_results
+# ==============================================================================
+# 3. MAIN EXECUTION WITH CUSTOM TRAINING LOOP
+# ==============================================================================
+
+def main():
+    """The main pipeline function."""
+    cfg = DummyConfig()
+
+    print("Starting unified multi-modal BNN workflow...")
+    
+    (X_lc_ts, X_lc_img, X_ttv, X_rv), y = load_and_preprocess_data(cfg)
+    
+    num_test = int(cfg.NUM_SAMPLES * cfg.TEST_SPLIT_FRACTION)
+    num_train = cfg.NUM_SAMPLES - num_test
+    
+    X_train = [X_lc_ts[:-num_test], X_lc_img[:-num_test], X_ttv[:-num_test], X_rv[:-num_test]]
+    y_train = y[:-num_test]
+    X_test = [X_lc_ts[-num_test:], X_lc_img[-num_test:], X_ttv[-num_test:], X_rv[-num_test:]]
+    y_test = y[-num_test:]
+    
+    print(f"\nData loaded. Training on {num_train} samples, testing on {num_test} samples.")
+
+    # --- Build the model, optimizer, and metrics ---
+    model = UnifiedMultiModalBNN(cfg)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=cfg.LEARNING_RATE)
+    
+    # --- The Custom Training Loop ---
+    @tf.function
+    def train_step(inputs, labels):
+        with tf.GradientTape() as tape:
+            logits = model(inputs, training=True)
+            nll = negative_log_likelihood(labels, logits)
+            
+            # *** THIS IS THE FIX ***
+            # Manually get the KL loss from our dedicated method.
+            kl_loss = model.kl_loss()
+            
+            # Scale the KL loss
+            scaled_kl_loss = kl_loss / num_train * cfg.KL_WEIGHT
+            
+            total_loss = nll + scaled_kl_loss
+        
+        gradients = tape.gradient(total_loss, model.trainable_variables)
+        clipped_gradients, _ = tf.clip_by_global_norm(gradients, cfg.GRADIENT_CLIP_NORM)
+        optimizer.apply_gradients(zip(clipped_gradients, model.trainable_variables))
+        return nll, scaled_kl_loss
+
+    print("\nStarting custom training loop...")
+    start_time = time.time()
+    for epoch in range(cfg.EPOCHS):
+        print(f"Epoch {epoch + 1}/{cfg.EPOCHS}")
+        train_dataset = tf.data.Dataset.from_tensor_slices(((X_train[0], X_train[1], X_train[2], X_train[3]), y_train)).batch(cfg.BATCH_SIZE)
+        
+        epoch_nll_loss = []
+        epoch_kl_loss = []
+        for step, (x_batch, y_batch) in enumerate(train_dataset):
+            nll, kl = train_step(x_batch, y_batch)
+            epoch_nll_loss.append(nll.numpy())
+            epoch_kl_loss.append(kl.numpy())
+        
+        # Print average loss for the epoch
+        print(f"  Avg NLL Loss: {np.mean(epoch_nll_loss):.4f}, Avg KL Loss: {np.mean(epoch_kl_loss):.4f}, Avg Total Loss: {np.mean(epoch_nll_loss) + np.mean(epoch_kl_loss):.4f}")
+    
+    print(f"\nTraining finished in {time.time() - start_time:.2f} seconds.")
+
+    # --- Evaluate with Uncertainty ---
+    print(f"\nPerforming inference with {cfg.NUM_MC_SAMPLES} Monte Carlo samples...")
+    X_test_tuple = (X_test[0], X_test[1], X_test[2], X_test[3])
+    
+    logits_samples = [model(X_test_tuple, training=False) for _ in range(cfg.NUM_MC_SAMPLES)]
+    probs = tf.nn.sigmoid(tf.stack(logits_samples)).numpy()
+
+    mean_probs = np.mean(probs, axis=0).flatten()
+    std_dev_probs = np.std(probs, axis=0).flatten()
+    predicted_classes = (mean_probs > 0.5).astype(int)
+    final_accuracy = np.mean(predicted_classes == y_test)
+    print(f"\n✅ Final Accuracy: {final_accuracy:.4f}")
+
+    print("\n--- Example Predictions with Uncertainty ---")
+    print("True | Pred | Mean Prob | Uncertainty (Std Dev) | Confidence")
+    print("------------------------------------------------------------------")
+    for i in range(15):
+        uncertainty = std_dev_probs[i]
+        confidence_char = "✅ High" if uncertainty < 0.1 else ("🤔 Medium" if uncertainty < 0.3 else "❓ Low")
+        print(f"  {int(y_test[i])}  |   {predicted_classes[i]}  |   {mean_probs[i]:.3f}   |  {uncertainty:.3f}             | {confidence_char}")
+
+if __name__ == "__main__":
+    main()

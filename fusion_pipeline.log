@@ -1,0 +1,451 @@
+2025-08-14 08:13:54,236 - utils.file_utils - INFO - [setup_logging:40] - Logging configured. Level: DEBUG. Log file: results/fusion_run_20250814-081354/fusion_pipeline.log
+2025-08-14 08:13:54,236 - __main__ - INFO - [main:53] - --- Starting Bayesian Fusion Pipeline with Hybrid Training ---
+2025-08-14 08:13:54,237 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:37] - --- Starting Multi-Method Fusion Dataset Creation ---
+2025-08-14 08:13:54,237 - data.real_data_fetcher - INFO - [smart_data_fetcher:27] - Scanning for confirmed planets in: ../exo-main/kepler_local_data/confirmed_planets/
+2025-08-14 08:13:54,307 - data.real_data_fetcher - INFO - [smart_data_fetcher:35] - Found 1985 confirmed planet files.
+2025-08-14 08:13:54,307 - data.real_data_fetcher - INFO - [smart_data_fetcher:41] - Scanning for false positives in: ../exo-main/kepler_local_data/false_positives/
+2025-08-14 08:13:54,595 - data.real_data_fetcher - INFO - [smart_data_fetcher:48] - Found 8214 false positive files.
+2025-08-14 08:13:54,596 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:47] - Class balance in all_fits_files: {1: 1985, 0: 8214}
+2025-08-14 08:13:54,596 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:96] - Loading cached RV/Imaging data from results/rv_imaging_cache.pkl
+2025-08-14 08:13:54,601 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:113] - Successfully found RV data for 0/200 targets.
+2025-08-14 08:13:54,601 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:114] - Successfully found Imaging data for 0/200 targets.
+2025-08-14 08:13:54,601 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:122] - Multi-method samples per class in dataset: {0: 0, 1: 0}
+2025-08-14 08:13:54,601 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:125] - Processing 200 transit light curves...
+2025-08-14 08:14:04,825 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:135] - Assembling final dataset arrays...
+2025-08-14 08:14:04,878 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 87 transit times.
+2025-08-14 08:14:04,879 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.9742 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:04,879 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 74 transit times.
+2025-08-14 08:14:04,880 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8238 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:04,880 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 63 transit times.
+2025-08-14 08:14:04,881 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5081 days marked as invalid: Low confidence: 0.28 < 0.5 (confidence: 0.28)
+2025-08-14 08:14:04,881 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 30 transit times.
+2025-08-14 08:14:04,882 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9781 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:04,882 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 104 transit times.
+2025-08-14 08:14:04,883 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6538 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:04,883 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 90 transit times.
+2025-08-14 08:14:04,884 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.9222 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:04,884 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 44 transit times.
+2025-08-14 08:14:04,884 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7082 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:04,885 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 83 transit times.
+2025-08-14 08:14:04,885 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.4598 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:04,886 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 108 transit times.
+2025-08-14 08:14:04,886 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5217 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:04,887 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 69 transit times.
+2025-08-14 08:14:04,887 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0427 days marked as invalid: Low confidence: 0.12 < 0.5 (confidence: 0.12)
+2025-08-14 08:14:04,888 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 17 transit times.
+2025-08-14 08:14:04,888 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7297 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:04,888 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 111 transit times.
+2025-08-14 08:14:04,889 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.6418 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:04,889 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 18 transit times.
+2025-08-14 08:14:04,890 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:04,890 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 29 transit times.
+2025-08-14 08:14:04,891 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:04,891 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 35 transit times.
+2025-08-14 08:14:05,574 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_35_transits.png
+2025-08-14 08:14:05,574 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4942 days marked as invalid: Low confidence: 0.35 < 0.5 (confidence: 0.35)
+2025-08-14 08:14:05,574 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 13 transit times.
+2025-08-14 08:14:05,575 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5101 days marked as invalid: Low confidence: 0.26 < 0.5 (confidence: 0.26)
+2025-08-14 08:14:05,575 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 20 transit times.
+2025-08-14 08:14:05,576 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 3.2235 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:05,576 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 108 transit times.
+2025-08-14 08:14:05,577 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5217 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:05,577 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 101 transit times.
+2025-08-14 08:14:05,578 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:05,578 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 47 transit times.
+2025-08-14 08:14:05,578 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:05,579 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 72 transit times.
+2025-08-14 08:14:05,579 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5947 days marked as invalid: Low confidence: 0.20 < 0.5 (confidence: 0.20)
+2025-08-14 08:14:05,579 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 29 transit times.
+2025-08-14 08:14:05,580 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9506 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:05,580 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 28 transit times.
+2025-08-14 08:14:05,581 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0815 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:05,581 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 70 transit times.
+2025-08-14 08:14:06,169 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_70_transits.png
+2025-08-14 08:14:06,169 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5217 days marked as invalid: Low confidence: 0.30 < 0.5 (confidence: 0.30)
+2025-08-14 08:14:06,169 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 95 transit times.
+2025-08-14 08:14:06,170 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7082 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:06,170 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 277 transit times.
+2025-08-14 08:14:06,172 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:06,172 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 62 transit times.
+2025-08-14 08:14:06,172 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,173 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 89 transit times.
+2025-08-14 08:14:06,173 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5757 days marked as invalid: Low confidence: 0.26 < 0.5 (confidence: 0.26)
+2025-08-14 08:14:06,174 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 75 transit times.
+2025-08-14 08:14:06,174 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7845 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:06,174 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 16 transit times.
+2025-08-14 08:14:06,175 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9739 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,175 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 269 transit times.
+2025-08-14 08:14:06,176 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.1004 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,177 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 92 transit times.
+2025-08-14 08:14:06,177 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4945 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:06,178 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 63 transit times.
+2025-08-14 08:14:06,178 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4948 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:06,178 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 39 transit times.
+2025-08-14 08:14:06,179 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0496 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,179 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 114 transit times.
+2025-08-14 08:14:06,180 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6604 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,180 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 282 transit times.
+2025-08-14 08:14:06,181 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:06,182 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 61 transit times.
+2025-08-14 08:14:06,182 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4877 days marked as invalid: Low confidence: 0.27 < 0.5 (confidence: 0.27)
+2025-08-14 08:14:06,182 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 12 transit times.
+2025-08-14 08:14:06,183 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9622 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,183 - detection.periodicity_analyzer - INFO - [analyze_periodicity:49] - Cannot perform periodicity analysis: only 2 transits detected.
+2025-08-14 08:14:06,183 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 95 transit times.
+2025-08-14 08:14:06,184 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7078 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:06,184 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 274 transit times.
+2025-08-14 08:14:06,185 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:06,186 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 95 transit times.
+2025-08-14 08:14:06,186 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7606 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:06,187 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 47 transit times.
+2025-08-14 08:14:06,187 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6577 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,187 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 45 transit times.
+2025-08-14 08:14:06,188 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:06,188 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 116 transit times.
+2025-08-14 08:14:06,189 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8243 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,189 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 105 transit times.
+2025-08-14 08:14:06,190 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4978 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,190 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 101 transit times.
+2025-08-14 08:14:06,191 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4951 days marked as invalid: Low confidence: 0.20 < 0.5 (confidence: 0.20)
+2025-08-14 08:14:06,191 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 19 transit times.
+2025-08-14 08:14:06,671 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_19_transits.png
+2025-08-14 08:14:06,671 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5171 days marked as invalid: Low confidence: 0.31 < 0.5 (confidence: 0.31)
+2025-08-14 08:14:06,671 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 134 transit times.
+2025-08-14 08:14:06,672 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.04 < 0.5 (confidence: 0.04)
+2025-08-14 08:14:06,672 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 74 transit times.
+2025-08-14 08:14:06,673 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:06,673 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 45 transit times.
+2025-08-14 08:14:06,674 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,674 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 36 transit times.
+2025-08-14 08:14:06,675 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5778 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,675 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 31 transit times.
+2025-08-14 08:14:06,675 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6517 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,676 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 276 transit times.
+2025-08-14 08:14:06,677 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.2392 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,677 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 82 transit times.
+2025-08-14 08:14:06,678 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9828 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:06,678 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 66 transit times.
+2025-08-14 08:14:06,678 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4963 days marked as invalid: Low confidence: 0.24 < 0.5 (confidence: 0.24)
+2025-08-14 08:14:06,679 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 11 transit times.
+2025-08-14 08:14:06,679 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:06,679 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 35 transit times.
+2025-08-14 08:14:06,680 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6588 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,680 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 25 transit times.
+2025-08-14 08:14:06,680 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4914 days marked as invalid: Low confidence: 0.07 < 0.5 (confidence: 0.07)
+2025-08-14 08:14:06,681 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 112 transit times.
+2025-08-14 08:14:06,681 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4972 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,682 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 58 transit times.
+2025-08-14 08:14:06,682 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0996 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:06,683 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 270 transit times.
+2025-08-14 08:14:06,684 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:06,684 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 85 transit times.
+2025-08-14 08:14:06,685 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7052 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:06,685 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 89 transit times.
+2025-08-14 08:14:06,685 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,686 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 284 transit times.
+2025-08-14 08:14:06,687 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.2359 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,687 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 101 transit times.
+2025-08-14 08:14:06,688 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6591 days marked as invalid: Low confidence: 0.22 < 0.5 (confidence: 0.22)
+2025-08-14 08:14:06,688 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 16 transit times.
+2025-08-14 08:14:06,689 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.6389 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:06,689 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 288 transit times.
+2025-08-14 08:14:06,690 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:06,690 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 113 transit times.
+2025-08-14 08:14:06,691 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.1009 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,691 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 47 transit times.
+2025-08-14 08:14:06,692 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:06,692 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 65 transit times.
+2025-08-14 08:14:06,693 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4966 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:06,693 - detection.periodicity_analyzer - INFO - [analyze_periodicity:49] - Cannot perform periodicity analysis: only 2 transits detected.
+2025-08-14 08:14:06,693 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 30 transit times.
+2025-08-14 08:14:06,693 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9760 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,694 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 33 transit times.
+2025-08-14 08:14:06,694 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5093 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:06,694 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 63 transit times.
+2025-08-14 08:14:06,695 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7438 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:06,695 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 103 transit times.
+2025-08-14 08:14:06,696 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4960 days marked as invalid: Low confidence: 0.11 < 0.5 (confidence: 0.11)
+2025-08-14 08:14:06,696 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 76 transit times.
+2025-08-14 08:14:06,697 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.6559 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:06,697 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 46 transit times.
+2025-08-14 08:14:06,697 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6782 days marked as invalid: Low confidence: 0.11 < 0.5 (confidence: 0.11)
+2025-08-14 08:14:06,698 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 52 transit times.
+2025-08-14 08:14:06,698 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5040 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:06,698 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 42 transit times.
+2025-08-14 08:14:06,699 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5191 days marked as invalid: Low confidence: 0.24 < 0.5 (confidence: 0.24)
+2025-08-14 08:14:06,699 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 38 transit times.
+2025-08-14 08:14:07,178 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_38_transits.png
+2025-08-14 08:14:07,179 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4972 days marked as invalid: Low confidence: 0.32 < 0.5 (confidence: 0.32)
+2025-08-14 08:14:07,179 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 65 transit times.
+2025-08-14 08:14:07,180 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.2194 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:07,180 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 102 transit times.
+2025-08-14 08:14:07,181 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.2156 days marked as invalid: Low confidence: 0.01 < 0.5 (confidence: 0.01)
+2025-08-14 08:14:07,181 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 104 transit times.
+2025-08-14 08:14:07,182 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6500 days marked as invalid: Low confidence: 0.01 < 0.5 (confidence: 0.01)
+2025-08-14 08:14:07,182 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 63 transit times.
+2025-08-14 08:14:07,182 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8817 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:07,183 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 133 transit times.
+2025-08-14 08:14:07,184 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:07,184 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 102 transit times.
+2025-08-14 08:14:07,185 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6620 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:07,185 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 81 transit times.
+2025-08-14 08:14:07,185 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8268 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:07,186 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 48 transit times.
+2025-08-14 08:14:07,186 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:07,186 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 102 transit times.
+2025-08-14 08:14:07,187 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:07,187 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 104 transit times.
+2025-08-14 08:14:07,188 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8972 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:07,188 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 86 transit times.
+2025-08-14 08:14:07,189 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4942 days marked as invalid: Low confidence: 0.08 < 0.5 (confidence: 0.08)
+2025-08-14 08:14:07,189 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 19 transit times.
+2025-08-14 08:14:07,190 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6733 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:07,190 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 66 transit times.
+2025-08-14 08:14:07,190 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5241 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:07,191 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 35 transit times.
+2025-08-14 08:14:07,191 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8210 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:07,191 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 113 transit times.
+2025-08-14 08:14:07,192 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.4106 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:07,192 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 11 transit times.
+2025-08-14 08:14:07,193 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7260 days marked as invalid: Low confidence: 0.12 < 0.5 (confidence: 0.12)
+2025-08-14 08:14:07,193 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 147 transit times.
+2025-08-14 08:14:07,670 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_147_transits.png
+2025-08-14 08:14:07,670 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4974 days marked as invalid: Low confidence: 0.31 < 0.5 (confidence: 0.31)
+2025-08-14 08:14:07,671 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 304 transit times.
+2025-08-14 08:14:07,672 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:07,672 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 67 transit times.
+2025-08-14 08:14:07,673 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7371 days marked as invalid: Low confidence: 0.09 < 0.5 (confidence: 0.09)
+2025-08-14 08:14:07,673 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 16 transit times.
+2025-08-14 08:14:07,673 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0533 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:07,674 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 47 transit times.
+2025-08-14 08:14:07,674 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5464 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:07,674 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 50 transit times.
+2025-08-14 08:14:07,675 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5025 days marked as invalid: Low confidence: 0.12 < 0.5 (confidence: 0.12)
+2025-08-14 08:14:07,675 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 100 transit times.
+2025-08-14 08:14:08,160 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_100_transits.png
+2025-08-14 08:14:08,160 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4966 days marked as invalid: Low confidence: 0.33 < 0.5 (confidence: 0.33)
+2025-08-14 08:14:08,161 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 101 transit times.
+2025-08-14 08:14:08,161 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7592 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,162 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 74 transit times.
+2025-08-14 08:14:08,162 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4942 days marked as invalid: Low confidence: 0.28 < 0.5 (confidence: 0.28)
+2025-08-14 08:14:08,163 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 111 transit times.
+2025-08-14 08:14:08,163 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6188 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,164 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 49 transit times.
+2025-08-14 08:14:08,164 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,164 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 105 transit times.
+2025-08-14 08:14:08,165 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4926 days marked as invalid: Low confidence: 0.02 < 0.5 (confidence: 0.02)
+2025-08-14 08:14:08,165 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 51 transit times.
+2025-08-14 08:14:08,166 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8728 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:08,166 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 58 transit times.
+2025-08-14 08:14:08,167 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0996 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,167 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 201 transit times.
+2025-08-14 08:14:08,168 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:08,168 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 260 transit times.
+2025-08-14 08:14:08,169 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6632 days marked as invalid: Low confidence: 0.09 < 0.5 (confidence: 0.09)
+2025-08-14 08:14:08,169 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 32 transit times.
+2025-08-14 08:14:08,170 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.9299 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,170 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 32 transit times.
+2025-08-14 08:14:08,171 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8954 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,171 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 96 transit times.
+2025-08-14 08:14:08,172 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7616 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:08,172 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 100 transit times.
+2025-08-14 08:14:08,172 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:08,173 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 30 transit times.
+2025-08-14 08:14:08,173 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8222 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,173 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 98 transit times.
+2025-08-14 08:14:08,174 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8268 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:08,174 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 65 transit times.
+2025-08-14 08:14:08,175 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:08,175 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 284 transit times.
+2025-08-14 08:14:08,176 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:08,177 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 108 transit times.
+2025-08-14 08:14:08,177 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9871 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,177 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 45 transit times.
+2025-08-14 08:14:08,178 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4847 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,178 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 50 transit times.
+2025-08-14 08:14:08,179 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6705 days marked as invalid: Low confidence: 0.11 < 0.5 (confidence: 0.11)
+2025-08-14 08:14:08,179 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 53 transit times.
+2025-08-14 08:14:08,766 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_53_transits.png
+2025-08-14 08:14:08,766 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4969 days marked as invalid: Low confidence: 0.32 < 0.5 (confidence: 0.32)
+2025-08-14 08:14:08,766 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 92 transit times.
+2025-08-14 08:14:08,767 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7043 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,768 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 354 transit times.
+2025-08-14 08:14:08,769 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:08,769 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 49 transit times.
+2025-08-14 08:14:08,770 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.2308 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,770 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 49 transit times.
+2025-08-14 08:14:08,771 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6482 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,771 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 46 transit times.
+2025-08-14 08:14:08,771 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7354 days marked as invalid: Low confidence: 0.12 < 0.5 (confidence: 0.12)
+2025-08-14 08:14:08,772 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 109 transit times.
+2025-08-14 08:14:08,772 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5811 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,772 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 34 transit times.
+2025-08-14 08:14:08,773 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7042 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,773 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 96 transit times.
+2025-08-14 08:14:08,774 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4945 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:08,774 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 29 transit times.
+2025-08-14 08:14:08,775 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9379 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,775 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 62 transit times.
+2025-08-14 08:14:08,775 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8745 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:08,776 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 109 transit times.
+2025-08-14 08:14:08,776 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.09 < 0.5 (confidence: 0.09)
+2025-08-14 08:14:08,776 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 15 transit times.
+2025-08-14 08:14:08,777 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 4.6948 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,777 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 110 transit times.
+2025-08-14 08:14:08,778 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,778 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 42 transit times.
+2025-08-14 08:14:08,778 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:08,779 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 111 transit times.
+2025-08-14 08:14:08,779 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.4011 days marked as invalid: Low confidence: 0.10 < 0.5 (confidence: 0.10)
+2025-08-14 08:14:08,780 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 85 transit times.
+2025-08-14 08:14:08,780 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6188 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:08,781 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 71 transit times.
+2025-08-14 08:14:08,781 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0196 days marked as invalid: Low confidence: 0.11 < 0.5 (confidence: 0.11)
+2025-08-14 08:14:08,781 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 50 transit times.
+2025-08-14 08:14:08,782 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7639 days marked as invalid: Low confidence: 0.21 < 0.5 (confidence: 0.21)
+2025-08-14 08:14:08,782 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 106 transit times.
+2025-08-14 08:14:08,783 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6196 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,783 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 57 transit times.
+2025-08-14 08:14:08,784 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5825 days marked as invalid: Low confidence: 0.23 < 0.5 (confidence: 0.23)
+2025-08-14 08:14:08,784 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 96 transit times.
+2025-08-14 08:14:08,784 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7771 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:08,785 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 182 transit times.
+2025-08-14 08:14:08,786 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5842 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,786 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 109 transit times.
+2025-08-14 08:14:08,786 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5198 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,787 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 108 transit times.
+2025-08-14 08:14:08,787 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7606 days marked as invalid: Low confidence: 0.11 < 0.5 (confidence: 0.11)
+2025-08-14 08:14:08,788 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 32 transit times.
+2025-08-14 08:14:08,788 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6446 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:08,788 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 261 transit times.
+2025-08-14 08:14:08,789 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.19 < 0.5 (confidence: 0.19)
+2025-08-14 08:14:08,790 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 96 transit times.
+2025-08-14 08:14:08,790 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.18 < 0.5 (confidence: 0.18)
+2025-08-14 08:14:08,791 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 25 transit times.
+2025-08-14 08:14:09,264 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_25_transits.png
+2025-08-14 08:14:09,264 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4924 days marked as invalid: Low confidence: 0.31 < 0.5 (confidence: 0.31)
+2025-08-14 08:14:09,264 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 122 transit times.
+2025-08-14 08:14:09,265 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:09,265 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 100 transit times.
+2025-08-14 08:14:09,266 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,266 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 76 transit times.
+2025-08-14 08:14:09,267 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7112 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:09,267 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 45 transit times.
+2025-08-14 08:14:09,268 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5328 days marked as invalid: Low confidence: 0.24 < 0.5 (confidence: 0.24)
+2025-08-14 08:14:09,268 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 140 transit times.
+2025-08-14 08:14:09,269 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6504 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,269 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 33 transit times.
+2025-08-14 08:14:09,269 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,270 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 105 transit times.
+2025-08-14 08:14:09,270 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7569 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:09,271 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 53 transit times.
+2025-08-14 08:14:09,746 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_53_transits.png
+2025-08-14 08:14:09,747 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5029 days marked as invalid: Low confidence: 0.31 < 0.5 (confidence: 0.31)
+2025-08-14 08:14:09,747 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 109 transit times.
+2025-08-14 08:14:09,748 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5822 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,748 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 80 transit times.
+2025-08-14 08:14:09,749 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6196 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:09,749 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 175 transit times.
+2025-08-14 08:14:09,750 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8951 days marked as invalid: Low confidence: 0.12 < 0.5 (confidence: 0.12)
+2025-08-14 08:14:09,750 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 111 transit times.
+2025-08-14 08:14:09,751 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8182 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,751 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 21 transit times.
+2025-08-14 08:14:09,752 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.3341 days marked as invalid: Low confidence: 0.08 < 0.5 (confidence: 0.08)
+2025-08-14 08:14:09,752 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 31 transit times.
+2025-08-14 08:14:09,752 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9866 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:09,753 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 163 transit times.
+2025-08-14 08:14:09,753 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Period (200.0 days) exceeds half the data span (0.5 days) (confidence: nan)
+2025-08-14 08:14:09,754 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 100 transit times.
+2025-08-14 08:14:09,754 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8054 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:09,754 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 23 transit times.
+2025-08-14 08:14:10,241 - utils.visualization - INFO - [visualize_periodicity_analysis:510] - Saved periodicity analysis visualization to results/periodicity_analysis/periodogram_23_transits.png
+2025-08-14 08:14:10,241 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4913 days marked as invalid: Low confidence: 0.36 < 0.5 (confidence: 0.36)
+2025-08-14 08:14:10,241 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 22 transit times.
+2025-08-14 08:14:10,242 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.7663 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,242 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 27 transit times.
+2025-08-14 08:14:10,243 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8376 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,243 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 63 transit times.
+2025-08-14 08:14:10,243 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6689 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:10,244 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 107 transit times.
+2025-08-14 08:14:10,244 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.6408 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,245 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 95 transit times.
+2025-08-14 08:14:10,245 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:10,245 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 260 transit times.
+2025-08-14 08:14:10,246 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8222 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,247 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 133 transit times.
+2025-08-14 08:14:10,248 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9921 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,248 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 192 transit times.
+2025-08-14 08:14:10,249 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:10,249 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 18 transit times.
+2025-08-14 08:14:10,249 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.7957 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,250 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 30 transit times.
+2025-08-14 08:14:10,250 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.1657 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,250 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 29 transit times.
+2025-08-14 08:14:10,251 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6890 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:10,251 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 32 transit times.
+2025-08-14 08:14:10,251 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8087 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,252 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 58 transit times.
+2025-08-14 08:14:10,252 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5764 days marked as invalid: Low confidence: 0.21 < 0.5 (confidence: 0.21)
+2025-08-14 08:14:10,252 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 56 transit times.
+2025-08-14 08:14:10,253 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4938 days marked as invalid: Low confidence: 0.29 < 0.5 (confidence: 0.29)
+2025-08-14 08:14:10,253 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 81 transit times.
+2025-08-14 08:14:10,254 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.5162 days marked as invalid: Low confidence: 0.27 < 0.5 (confidence: 0.27)
+2025-08-14 08:14:10,254 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:43] - analyze_periodicity: No transit information provided.
+2025-08-14 08:14:10,254 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 102 transit times.
+2025-08-14 08:14:10,255 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.9000 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:10,255 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 31 transit times.
+2025-08-14 08:14:10,255 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6031 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,256 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 223 transit times.
+2025-08-14 08:14:10,257 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.6604 days marked as invalid: Low confidence: 0.15 < 0.5 (confidence: 0.15)
+2025-08-14 08:14:10,257 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 44 transit times.
+2025-08-14 08:14:10,257 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8332 days marked as invalid: Low confidence: 0.13 < 0.5 (confidence: 0.13)
+2025-08-14 08:14:10,258 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 76 transit times.
+2025-08-14 08:14:10,258 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8283 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:10,259 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 31 transit times.
+2025-08-14 08:14:10,259 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4891 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,259 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 101 transit times.
+2025-08-14 08:14:10,260 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.7087 days marked as invalid: Low confidence: 0.22 < 0.5 (confidence: 0.22)
+2025-08-14 08:14:10,260 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 103 transit times.
+2025-08-14 08:14:10,261 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4972 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,261 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 112 transit times.
+2025-08-14 08:14:10,262 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4932 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,262 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 109 transit times.
+2025-08-14 08:14:10,263 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.8983 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,263 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 94 transit times.
+2025-08-14 08:14:10,264 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.6327 days marked as invalid: Low confidence: 0.16 < 0.5 (confidence: 0.16)
+2025-08-14 08:14:10,264 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 107 transit times.
+2025-08-14 08:14:10,265 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 200.0000 days marked as invalid: Low confidence: 0.00 < 0.5 (confidence: 0.00)
+2025-08-14 08:14:10,265 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 103 transit times.
+2025-08-14 08:14:10,265 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 1.0610 days marked as invalid: Low confidence: 0.14 < 0.5 (confidence: 0.14)
+2025-08-14 08:14:10,266 - detection.periodicity_analyzer - DEBUG - [analyze_periodicity:52] - Analyzing periodicity for 107 transit times.
+2025-08-14 08:14:10,266 - detection.periodicity_analyzer - WARNING - [analyze_periodicity:146] - Potential period 0.4960 days marked as invalid: Low confidence: 0.17 < 0.5 (confidence: 0.17)
+2025-08-14 08:14:10,267 - data.fusion_dataset_generator - INFO - [log_shape_counts:186] - X_transit_image unique shapes and counts: {(1624,): 129, (469,): 42, (4108,): 13, (4070,): 9, (4486,): 2, (4272,): 2, (4226,): 1, (4441,): 1, (3534,): 1}
+2025-08-14 08:14:10,267 - data.fusion_dataset_generator - INFO - [log_shape_counts:186] - X_transit_timeseries unique shapes and counts: {(1624,): 129, (469,): 42, (4108,): 13, (4070,): 9, (4486,): 2, (4272,): 2, (4226,): 1, (4441,): 1, (3534,): 1}
+2025-08-14 08:14:10,269 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:220] - All transit time series padded/cropped to (200, 1), images to (64, 64, 1).
+2025-08-14 08:14:10,269 - data.fusion_dataset_generator - INFO - [create_fusion_dataset:221] - --- Fusion Dataset Creation Finished ---
+2025-08-14 08:14:10,270 - __main__ - INFO - [main:82] - Class distribution: {0: 100, 1: 100}
+2025-08-14 08:14:10,270 - __main__ - INFO - [main:83] - First 10 labels: [0 1 1 0 1 0 1 1 1 0]
+2025-08-14 08:14:10,271 - __main__ - INFO - [main:84] - transit_image_input shape: (200, 64, 64, 1)
+2025-08-14 08:14:10,271 - __main__ - INFO - [main:85] - transit_ts_input shape: (200, 200, 1)
+2025-08-14 08:14:10,271 - __main__ - INFO - [main:89] - ttv_input shape: (200, 7)
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:123] - Sample transit_image_input[0] min/max: 0.0/1.0
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:124] - Sample transit_ts_input[0] min/max: 0.0/1.0
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:125] - Sample ttv_input[0]: [ -84.42951149   49.30238231    0.         -168.78065243  -84.45871808
+ -126.64309869  -42.20378911]
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:126] - Sample rv_input[0] shape: (50, 1)
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:127] - Sample imaging_input[0] shape: (2,)
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:130] - 
+--- Fold 1/5 ---
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:133] - Stage 1: Pre-training Transit Branch on all data...
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:130] - 
+--- Fold 2/5 ---
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:133] - Stage 1: Pre-training Transit Branch on all data...
+2025-08-14 08:14:10,272 - __main__ - INFO - [main:130] - 
+--- Fold 3/5 ---
+2025-08-14 08:14:10,273 - __main__ - INFO - [main:133] - Stage 1: Pre-training Transit Branch on all data...
+2025-08-14 08:14:10,273 - __main__ - INFO - [main:130] - 
+--- Fold 4/5 ---
+2025-08-14 08:14:10,273 - __main__ - INFO - [main:133] - Stage 1: Pre-training Transit Branch on all data...
+2025-08-14 08:14:10,273 - __main__ - INFO - [main:130] - 
+--- Fold 5/5 ---
+2025-08-14 08:14:10,273 - __main__ - INFO - [main:133] - Stage 1: Pre-training Transit Branch on all data...

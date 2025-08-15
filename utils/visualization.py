@@ -405,6 +405,116 @@ def visualize_learning_curves(history, metrics=None, title=None, filename=None, 
         plt.show()
 
 
+def visualize_periodicity_analysis(periodogram_data, title=None, filename=None, output_dir=None):
+    """
+    Create a comprehensive visualization of periodicity analysis results including confidence metrics.
+    
+    Args:
+        periodogram_data: Dictionary containing periodicity analysis results
+            Including: period, power, best_period, fap, power_snr, peak_snr, confidence_score
+        title: Plot title (optional)
+        filename: Path to save the visualization (optional)
+        output_dir: Directory to save the visualization (optional)
+    """
+    fig = plt.figure(figsize=(15, 10))
+    gs = plt.GridSpec(3, 2)
+
+    # Main periodogram plot
+    ax1 = fig.add_subplot(gs[0:2, :])
+    ax1.semilogx(periodogram_data['period'], periodogram_data['power'], 'k-', alpha=0.8)
+    
+    # Highlight best period
+    best_idx = np.argmin(np.abs(np.array(periodogram_data['period']) - periodogram_data['best_period']))
+    ax1.plot(periodogram_data['best_period'], periodogram_data['power'][best_idx], 'ro', markersize=10)
+    ax1.annotate(
+        f"Best Period: {periodogram_data['best_period']:.2f} days",
+        xy=(periodogram_data['best_period'], periodogram_data['power'][best_idx]),
+        xytext=(0, 10), textcoords='offset points',
+        ha='center', va='bottom',
+        bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+        arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0')
+    )
+    
+    ax1.set_xlabel('Period (days)')
+    ax1.set_ylabel('Power')
+    ax1.set_title('Lomb-Scargle Periodogram')
+    ax1.grid(True, alpha=0.3)
+
+    # Confidence metrics visualization
+    ax2 = fig.add_subplot(gs[2, 0])
+    metrics = ['FAP', 'Power SNR', 'Peak SNR']
+    values = [
+        1 - periodogram_data['fap'],  # Convert FAP to confidence
+        min(1.0, periodogram_data['power_snr'] / 10),  # Normalize to 0-1
+        min(1.0, periodogram_data['peak_snr'] / 5)     # Normalize to 0-1
+    ]
+    
+    bars = ax2.bar(metrics, values)
+    ax2.set_ylim(0, 1)
+    ax2.set_ylabel('Normalized Score')
+    ax2.set_title('Confidence Metrics')
+    
+    # Color bars based on values
+    colors = plt.cm.RdYlGn(np.array(values))
+    for bar, color in zip(bars, colors):
+        bar.set_color(color)
+    
+    # Add value labels on bars
+    for bar, val in zip(bars, values):
+        ax2.text(
+            bar.get_x() + bar.get_width()/2,
+            bar.get_height(),
+            f'{val:.2f}',
+            ha='center', va='bottom'
+        )
+
+    # Overall confidence gauge
+    ax3 = fig.add_subplot(gs[2, 1])
+    confidence = periodogram_data['confidence_score']
+    
+    # Create a gauge-like visualization
+    gauge = np.linspace(0, np.pi, 100)
+    radius = np.ones_like(gauge)
+    colors = plt.cm.RdYlGn(np.linspace(0, 1, len(gauge)))
+    
+    ax3.set_aspect('equal')
+    
+    # Plot the gauge background
+    for i in range(len(gauge)-1):
+        ax3.fill_between(
+            [gauge[i], gauge[i+1]], [0, 0], [radius[i], radius[i+1]],
+            color=colors[i]
+        )
+    
+    # Plot the confidence needle
+    needle_angle = confidence * np.pi
+    ax3.plot([0, needle_angle], [0, 0.8], 'k-', linewidth=3)
+    ax3.text(np.pi/2, -0.2, f'Confidence: {confidence:.2%}', ha='center', va='top')
+    
+    ax3.set_xlim(0, np.pi)
+    ax3.set_ylim(-0.5, 1)
+    ax3.set_title('Overall Confidence')
+    ax3.axis('off')
+
+    plt.suptitle(title or 'Periodicity Analysis Results', y=0.95)
+    plt.tight_layout()
+    
+    if filename:
+        if output_dir:
+            full_path = os.path.join(output_dir, filename)
+        else:
+            full_path = filename
+            
+        try:
+            plt.savefig(full_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Saved periodicity analysis visualization to {full_path}")
+        except Exception as e:
+            logger.error(f"Failed to save visualization to {full_path}: {e}")
+        plt.close()
+    else:
+        plt.show()
+
+
 def visualize_confusion_matrix(y_true, y_pred, classes=None, normalize=False, title=None, filename=None, output_dir=None):
     """
     Visualize confusion matrix for classification results.
