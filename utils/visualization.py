@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import pandas as pd
+from sklearn.calibration import calibration_curve
 
 logger = logging.getLogger(__name__)
 
@@ -463,6 +464,83 @@ def visualize_confusion_matrix(y_true, y_pred, classes=None, normalize=False, ti
             logger.info(f"Saved confusion matrix to {full_path}")
         except Exception as e:
             logger.error(f"Failed to save visualization to {full_path}: {e}")
+        plt.close()
+    else:
+        plt.show()
+
+# --- NEW FUNCTIONS ADDED BELOW ---
+
+def visualize_calibration_plot(y_true, y_pred_prob, n_bins=10, title=None, filename=None, output_dir=None):
+    """
+    Visualize a calibration plot (reliability diagram).
+
+    Args:
+        y_true (np.ndarray): True binary labels.
+        y_pred_prob (np.ndarray): Predicted probabilities for the positive class.
+        n_bins (int): Number of bins to use for the calibration curve.
+        title (str): Plot title.
+        filename (str): Name of the file to save the plot.
+        output_dir (str): Directory to save the plot.
+    """
+    prob_true, prob_pred = calibration_curve(y_true, y_pred_prob, n_bins=n_bins, strategy='uniform')
+    
+    plt.figure(figsize=(8, 8))
+    plt.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+    plt.plot(prob_pred, prob_true, "s-", label="Model")
+    
+    plt.xlabel("Mean predicted probability (per bin)")
+    plt.ylabel("Fraction of positives (per bin)")
+    plt.title(title or "Calibration Plot (Reliability Diagram)")
+    plt.legend(loc="lower right")
+    plt.grid(True, alpha=0.3)
+    
+    if filename:
+        full_path = os.path.join(output_dir, filename) if output_dir else filename
+        try:
+            plt.savefig(full_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Saved calibration plot to {full_path}")
+        except Exception as e:
+            logger.error(f"Failed to save calibration plot to {full_path}: {e}")
+        plt.close()
+    else:
+        plt.show()
+
+
+def visualize_uncertainty_distribution(uncertainty, predictions, y_true, title=None, filename=None, output_dir=None):
+    """
+    Visualize the distribution of model uncertainty, colored by correctness.
+
+    Args:
+        uncertainty (np.ndarray): The variance of the predictions for each sample.
+        predictions (np.ndarray): The mean predictions for each sample.
+        y_true (np.ndarray): The true labels for each sample.
+        title (str): Plot title.
+        filename (str): Name of the file to save the plot.
+        output_dir (str): Directory to save the plot.
+    """
+    correct_mask = (np.round(predictions) == y_true)
+    
+    plt.figure(figsize=(12, 6))
+    
+    # Plot histogram for correct predictions
+    plt.hist(uncertainty[correct_mask], bins=30, alpha=0.7, color='green', label='Correct Predictions')
+    
+    # Plot histogram for incorrect predictions
+    plt.hist(uncertainty[~correct_mask], bins=30, alpha=0.7, color='red', label='Incorrect Predictions')
+    
+    plt.xlabel('Prediction Variance (Uncertainty)')
+    plt.ylabel('Frequency')
+    plt.title(title or 'Distribution of Model Uncertainty')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    if filename:
+        full_path = os.path.join(output_dir, filename) if output_dir else filename
+        try:
+            plt.savefig(full_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Saved uncertainty distribution plot to {full_path}")
+        except Exception as e:
+            logger.error(f"Failed to save uncertainty distribution plot to {full_path}: {e}")
         plt.close()
     else:
         plt.show()

@@ -7,7 +7,9 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
 import os 
-from pathlib import Path # <<<<<<<<<<<< ADDED THIS IMPORT
+from pathlib import Path 
+from sklearn.metrics import brier_score_loss
+from calibration import get_calibration_error
 
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -17,6 +19,25 @@ from sklearn.metrics import (
 from tensorflow.keras import backend as K 
 
 logger = logging.getLogger(__name__)
+
+def get_uncertainty_metrics(y_true, y_pred_mean):
+    """
+    Calculate uncertainty and calibration metrics.
+    """
+    if len(y_true) == 0 or len(y_pred_mean) == 0:
+        return {
+            'expected_calibration_error': 1.0,
+            'brier_score': 1.0
+        }
+    
+    ece = get_calibration_error(y_pred_mean, y_true)
+    brier_score = brier_score_loss(y_true, y_pred_mean)
+    
+    return {
+        'expected_calibration_error': ece,
+        'brier_score': brier_score
+    }
+
 
 
 def focal_loss(gamma=2., alpha=.25):

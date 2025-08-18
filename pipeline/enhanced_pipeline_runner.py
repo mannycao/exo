@@ -3,11 +3,13 @@
 import logging
 import os
 import numpy as np
+import pandas as pd # Added import
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 import config
-from data.dataset_generator import create_dataset, balance_dataset
+from data.dataset_generator import create_dataset
+from data.augmentation_utils import augment_data
 from models.multimodal_model import build_multimodal_fusion_model
 from models.model_trainer import train_enhanced_model
 from pipeline.report_generator import generate_report
@@ -25,10 +27,21 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
     os.makedirs(processed_data_dir, exist_ok=True)
     
     logger.info("Creating the multimodal dataset (time-series and images)...")
+    
+    # Load exoplanet metadata for period information
+    # Assuming exoplanet_labels.csv is in data/metadata relative to project root
+    project_root = Path(__file__).resolve().parents[1] # Go up two levels from pipeline/ to project root
+    metadata_path = project_root / "data" / "metadata" / "exoplanet_labels.csv"
+    if not metadata_path.exists():
+        logger.error(f"Metadata file not found: {metadata_path}. Aborting.")
+        return None
+    exoplanet_metadata_df = pd.read_csv(metadata_path)
+
     create_dataset(
         file_paths=[item['file_path'] for item in light_curve_files],
         labels=[item['type'] for item in light_curve_files],
         output_dir=processed_data_dir,
+        metadata_df=exoplanet_metadata_df,
         image_size=config.IMAGE_SIZE
     )
     
@@ -45,8 +58,8 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         logger.error(f"Dataset contains only one class. Cannot train model.")
         return {'error': 'Single class dataset'}
 
-    logger.info("Balancing the multimodal dataset...")
-    [X_ts, X_img], y = balance_dataset([X_ts, X_img], y)
+    logger.info("Augmenting and balancing the multimodal dataset...")
+    X_img, X_ts, y = augment_data([X_img, X_ts], y)
     
     X_ts_train, X_ts_val, X_img_train, X_img_val, y_train, y_val = train_test_split(
         X_ts, X_img, y, test_size=0.2, random_state=42, stratify=y
