@@ -1,11 +1,4 @@
-# run_bayesian_inference.py (Legacy Demonstration Script)
-#
-# NOTE: The functionality of this script has been integrated into the main
-# pipeline runner. The recommended way to perform this analysis is now:
-# `python enhanced_main.py --mode bayesian_cross_val`
-#
-# This script is preserved here as a reference for the original, standalone
-# inference and triage process.
+# run_bayesian_inference_optimized.py
 
 import os
 import sys
@@ -46,11 +39,11 @@ def run_inference(args):
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    log_file_path = output_dir / 'bayesian_inference.log'
+    log_file_path = output_dir / 'bayesian_inference_optimized.log'
     setup_logging(str(log_file_path))
     logger = logging.getLogger(__name__)
 
-    logger.info("--- Starting Bayesian Inference Pipeline ---")
+    logger.info("--- Starting Bayesian Inference Pipeline (Optimized) ---")
     logger.info(f"Loading trained model from: {args.model_path}")
 
     # --- 1. Load Model and Data ---
@@ -71,8 +64,14 @@ def run_inference(args):
     if args.sample_size:
         light_curve_files = light_curve_files[:args.sample_size]
 
-    labels_df = pd.DataFrame(light_curve_files)
-    X_image, X_timeseries, y_true = prepare_multimodal_data(light_curve_files, labels_df)
+    # Load exoplanet metadata for period information
+    metadata_path = project_root / "data" / "metadata" / "exoplanet_labels.csv"
+    if not metadata_path.exists():
+        logger.error(f"Metadata file not found: {metadata_path}. Aborting.")
+        return
+    exoplanet_metadata_df = pd.read_csv(metadata_path)
+
+    X_image, X_timeseries, y_true, successful_files = prepare_multimodal_data(light_curve_files, exoplanet_metadata_df)
 
     if X_image is None or X_timeseries is None:
         logger.error("Failed to prepare data. Aborting.")
@@ -82,11 +81,27 @@ def run_inference(args):
     predictor = BayesianPredictor(model, n_samples=args.n_samples)
     y_pred_mean, y_pred_uncertainty = predictor.predict(X_image, X_timeseries)
 
-    # --- 3. Probabilistic Triage and Analysis ---
-    logger.info("--- Probabilistic Triage Results ---")
-    low_uncert_thresh = np.percentile(y_pred_uncertainty, 25)
-    high_confidence_planets = (y_pred_mean > 0.90) & (y_pred_uncertainty < low_uncert_thresh)
-    ambiguous_candidates = (y_pred_mean > 0.5) & (y_pred_uncertainty >= low_uncert_thresh)
+    # --- 3. Optimized Probabilistic Triage and Analysis ---
+    logger.info("--- Probabilistic Triage Results (Optimized) ---")
+
+    # Separate uncertainties for true positives and true negatives
+    true_pos_uncertainty = y_pred_uncertainty[y_true == 1]
+    
+    # A simple optimization: define the uncertainty threshold as the mean uncertainty of the true positives.
+    # The intuition is that anything with higher uncertainty than a typical true positive is "ambiguous".
+    if len(true_pos_uncertainty) > 0:
+        ambiguity_threshold = np.mean(true_pos_uncertainty)
+        logger.info(f"Calculated ambiguity threshold (mean uncertainty of true positives): {ambiguity_threshold:.4f}")
+    else:
+        # Fallback if there are no true positives in the dataset
+        ambiguity_threshold = np.percentile(y_pred_uncertainty, 75)
+        logger.warning(f"No true positives in dataset. Using 75th percentile of all uncertainties as fallback ambiguity threshold: {ambiguity_threshold:.4f}")
+
+    # High-confidence planets are those with a high probability AND lower-than-average uncertainty for a true positive
+    high_confidence_planets = (y_pred_mean > 0.75) & (y_pred_uncertainty < ambiguity_threshold)
+
+    # Ambiguous candidates are those with a decent probability but high uncertainty
+    ambiguous_candidates = (y_pred_mean > 0.5) & (y_pred_uncertainty >= ambiguity_threshold)
     
     logger.info(f"High-Confidence Planet Candidates: {np.sum(high_confidence_planets)}")
     logger.info(f"Ambiguous Candidates for Review: {np.sum(ambiguous_candidates)}")
@@ -104,7 +119,7 @@ def run_inference(args):
     # --- 5. Generate Report ---
     logger.info("Generating report...")
     results_for_report = []
-    for i, file_info in enumerate(light_curve_files):
+    for i, file_info in enumerate(successful_files):
         results_for_report.append({
             'file_path': file_info['file_path'],
             'success': True,
@@ -114,18 +129,18 @@ def run_inference(args):
         })
     
     report_df = pd.DataFrame(results_for_report)
-    report_df.to_csv(output_dir / "inference_results.csv", index=False)
-    logger.info(f"Inference results saved to {output_dir / 'inference_results.csv'}")
+    report_df.to_csv(output_dir / "inference_results_optimized.csv", index=False)
+    logger.info(f"Inference results saved to {output_dir / 'inference_results_optimized.csv'}")
 
     logger.info("--- Bayesian Inference Pipeline Finished ---")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Bayesian Inference with MC Dropout on a trained model (Legacy).")
+    parser = argparse.ArgumentParser(description="Run Bayesian Inference with MC Dropout on a trained model (Optimized).")
     parser.add_argument('--model_path', type=str, required=True, help="Path to the trained model file.")
     parser.add_argument('--planets_dir', type=str, required=True, help="Directory for confirmed planet light curves.")
     parser.add_argument('--false_positives_dir', type=str, required=True, help="Directory for false positive light curves.")
-    parser.add_argument('--output_dir', type=str, default="results/bayesian_run", help="Directory to save inference results and plots.")
+    parser.add_argument('--output_dir', type=str, default="results/bayesian_run_optimized", help="Directory to save inference results and plots.")
     parser.add_argument('--n_samples', type=int, default=100, help="Number of Monte Carlo samples for inference.")
     parser.add_argument('--sample_size', type=int, default=None, help="Limit the number of files to process for a quick test.")
     
