@@ -25,6 +25,7 @@ TRANSIT_SENSITIVITY = 2.0
 PROMINENCE_FACTOR = 0.3
 MIN_TRANSIT_DURATION = 0.04
 MAX_TRANSIT_DURATION = 0.6
+BLS_POWER_THRESHOLD = 0.1 # Added this line
 
 # --- Feature Extraction for Multimodal Model ---
 WINDOW_SIZE = 1.0

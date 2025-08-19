@@ -40,12 +40,6 @@ def setup_logging(log_file_path):
     logger.info(f"Logging configured. Level: {logging.getLevelName(log_level)}. Log file: {log_file_path}")
 
 
-def ensure_directory(directory):
-    """
-    Ensure that a directory exists, creating it if necessary.
-    """
-    if not os.path.exists(directory):
-        logger.info(f"Creating directory: {directory}")
-        os.makedirs(directory, exist_ok=True)
+
 
 # You can include your other utility functions (save_pickle, etc.) below

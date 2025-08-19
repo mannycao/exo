@@ -26,10 +26,10 @@ if str(project_root) not in sys.path:
 
 from utils.file_utils import setup_logging
 from data.real_data_fetcher import smart_data_fetcher
-from legacy_pipeline import prepare_multimodal_data
+
 from models.bayesian_predictor import BayesianPredictor
 from models.enhanced_trainer import focal_loss
-from utils.visualization import visualize_calibration_plot, visualize_uncertainty_distribution
+from utils.plotting import visualize_calibration_plot, visualize_uncertainty_distribution
 from utils.metrics import get_uncertainty_metrics
 
 def run_inference(args):
@@ -71,7 +71,32 @@ def run_inference(args):
         return
     exoplanet_metadata_df = pd.read_csv(metadata_path)
 
-    X_image, X_timeseries, y_true, successful_files = prepare_multimodal_data(light_curve_files, exoplanet_metadata_df)
+    # NEW DATA PREPARATION LOGIC
+    processed_data_temp_dir = output_dir / "temp_processed_data"
+    processed_data_temp_dir.mkdir(parents=True, exist_ok=True)
+
+    create_dataset(
+        file_paths=[item['file_path'] for item in light_curve_files],
+        labels=[item['type'] for item in light_curve_files],
+        output_dir=processed_data_temp_dir,
+        metadata_df=exoplanet_metadata_df,
+        image_size=config.IMAGE_SIZE # Use IMAGE_SIZE from config
+    )
+
+    try:
+        X_timeseries = np.load(processed_data_temp_dir / 'X_timeseries.npy')
+        X_image = np.load(processed_data_temp_dir / 'X_images.npy')
+        y_true = np.load(processed_data_temp_dir / 'y_labels.npy')
+    except FileNotFoundError:
+        logger.error("Could not find multimodal dataset files in temp directory. Aborting.")
+        return
+
+    # Remove the temporary processed data directory after loading
+    import shutil
+    shutil.rmtree(processed_data_temp_dir)
+
+    # Define successful_files here, as it's needed for the report
+    successful_files = light_curve_files # Assuming all light_curve_files were successfully processed into X_image, X_timeseries, y_true
 
     if X_image is None or X_timeseries is None:
         logger.error("Failed to prepare data. Aborting.")
@@ -109,7 +134,7 @@ def run_inference(args):
 
     # --- 4. Evaluate Uncertainty Quality ---
     logger.info("Evaluating uncertainty quality...")
-    uncertainty_metrics = get_uncertainty_metrics(y_true, y_pred_mean)
+        uncertainty_metrics = get_uncertainty_metrics(y_true, y_pred_mean)
     logger.info(f"Expected Calibration Error (ECE): {uncertainty_metrics['expected_calibration_error']:.4f}")
     logger.info(f"Brier Score: {uncertainty_metrics['brier_score']:.4f}")
 

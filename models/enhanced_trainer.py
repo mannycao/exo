@@ -256,39 +256,3 @@ def visualize_enhanced_learning_curves(history, metrics=None, title=None, filena
         plt.show()
 
 
-def train_with_confidence_weighted_samples(X_train, y_train, confidences, model):
-    """
-    Train a model with confidence-weighted samples.
-    
-    Args:
-        X_train: Training features
-        y_train: Training labels
-        confidences: Confidence scores for each label
-        model: Model to train
-    
-    Returns:
-        tuple: (trained_model, history)
-    """
-    # Create sample weights based on confidence
-    sample_weights = confidences.copy()
-    
-    # Apply minimum weight to ensure all samples contribute
-    sample_weights = np.maximum(sample_weights, 0.1)
-    
-    # Normalize weights
-    sample_weights = sample_weights / np.mean(sample_weights)
-    
-    # Train with sample weights
-    history = model.fit(
-        X_train, y_train,
-        sample_weight=sample_weights,
-        epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
-        validation_split=0.2,
-        callbacks=[
-            tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True),
-            tf.keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=5)
-        ]
-    )
-    
-    return model, history

@@ -10,6 +10,8 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 import time
+from concurrent.futures import ThreadPoolExecutor # New import
+from functools import partial # New import
 
 def read_kic_ids_from_csv(csv_path, kic_column_name):
     """
@@ -98,6 +100,8 @@ def main():
                         help='Path to the CSV file with false positive Kepler IDs.')
     parser.add_argument('--output_base', type=str, default='kepler_local_data',
                         help='Base directory where data folders will be created.')
+    parser.add_argument('--max_workers', type=int, default=os.cpu_count() * 2, # New argument
+                        help='Maximum number of concurrent download workers.')
     
     args = parser.parse_args()
     
@@ -107,25 +111,33 @@ def main():
     os.makedirs(fp_dir, exist_ok=True)
     
     # --- Read IDs from CSV files ---
-    # From your provided files, the column name is 'kepid'
     confirmed_ids = read_kic_ids_from_csv(args.confirmed_csv, kic_column_name='kepid')
     fp_ids = read_kic_ids_from_csv(args.fp_csv, kic_column_name='kepid')
     
-    # --- Download Confirmed Planets ---
+    # --- Download Confirmed Planets (Parallelized) ---
     confirmed_success_count = 0
     if confirmed_ids:
         print(f"\nDownloading light curves for {len(confirmed_ids)} confirmed planets...")
-        for kic_id in tqdm(confirmed_ids, desc="Confirmed Planets"):
-            confirmed_success_count += download_file_direct(kic_id, confirmed_dir)
-            time.sleep(0.05) # Be polite to the server
+        with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+            # Use a partial function to pass the output_dir to download_file_direct
+            download_func = partial(download_file_direct, output_dir=confirmed_dir)
+            
+            # Map the download function to each KIC ID and sum the results
+            results = list(tqdm(executor.map(download_func, confirmed_ids), 
+                                total=len(confirmed_ids), 
+                                desc="Confirmed Planets"))
+            confirmed_success_count = sum(results)
     
-    # --- Download False Positives ---
+    # --- Download False Positives (Parallelized) ---
     fp_success_count = 0
     if fp_ids:
         print(f"\nDownloading light curves for {len(fp_ids)} false positives...")
-        for kic_id in tqdm(fp_ids, desc="False Positives"):
-            fp_success_count += download_file_direct(kic_id, fp_dir)
-            time.sleep(0.05)
+        with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+            download_func = partial(download_file_direct, output_dir=fp_dir)
+            results = list(tqdm(executor.map(download_func, fp_ids), 
+                                total=len(fp_ids), 
+                                desc="False Positives"))
+            fp_success_count = sum(results)
             
     # --- Final Summary ---
     print("\n====================================")

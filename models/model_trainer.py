@@ -158,7 +158,7 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     history_df.to_csv(history_path)
 
     try:
-        visualize_learning_curves(
+        visualize_enhanced_learning_curves(
             history.history, 
             metrics=['loss', 'accuracy', 'precision', 'recall', 'roc_auc', 'pr_auc'], 
             filename=f"{model_name}_learning_curves.png",
@@ -174,81 +174,4 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     return model, history
 
 
-def train_with_confidence_weighted_samples(X_train, y_train, confidences, model,
-                                           epochs=None, batch_size=None, output_dir=None, model_name="confidence_weighted_model"):
-    """
-    Train a model with confidence-weighted samples.
-    (This function is from your original models/enhanced_trainer.py)
-    
-    Args:
-        X_train: Training features
-        y_train: Training labels
-        confidences: Confidence scores for each label (must be same length as y_train)
-        model: Model to train
-        epochs, batch_size, output_dir, model_name: Standard training parameters
-    
-    Returns:
-        tuple: (trained_model, history)
-    """
-    epochs = epochs or config.EPOCHS
-    batch_size = batch_size or config.BATCH_SIZE
-    output_dir_path = Path(output_dir) if output_dir else Path(config.MODEL_DIR)
-    output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    checkpoint_path = str(output_dir_path / f"{model_name}_best.keras")
-    history_path = str(output_dir_path / f"{model_name}_history.csv")
-
-    if len(X_train) != len(confidences): # This might be an issue if X_train is a list for multimodal
-        if isinstance(X_train, list):
-            if len(X_train[0]) != len(confidences): # Check against the first element if X_train is list
-                 raise ValueError("Length of X_train elements and confidences must match for multimodal.")
-        else: # X_train is a single numpy array
-            raise ValueError("Length of X_train and confidences must match.")
-
-
-    # Create sample weights based on confidence
-    sample_weights = np.asarray(confidences).copy()
-    sample_weights = np.maximum(sample_weights, 0.01) # Apply minimum weight
-    # Normalize weights (optional, but can help stabilize training if confidences vary wildly)
-    # sample_weights = sample_weights / np.mean(sample_weights) 
-    
-    logger.info(f"Training model {model_name} with confidence-weighted samples.")
-
-    # Assuming model is already compiled with optimizer, loss, metrics
-    # If not, compile it here similar to train_enhanced_model
-
-    callbacks = [
-        ModelCheckpoint(filepath=checkpoint_path, save_best_only=True, monitor='val_loss', verbose=1),
-        EarlyStopping(monitor='val_loss', patience=config.EARLY_STOPPING_PATIENCE, restore_best_weights=True, verbose=1),
-        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-7, verbose=1)
-    ]
-    
-    val_split_prop = 0.2 
-    
-    history = model.fit(
-        X_train, np.asarray(y_train).reshape(-1,1), 
-        sample_weight=sample_weights,
-        epochs=epochs,
-        batch_size=batch_size,
-        validation_split=val_split_prop, 
-        callbacks=callbacks,
-        verbose=1
-    )
-    
-    history_df = pd.DataFrame(history.history)
-    history_df.to_csv(history_path)
-
-    try:
-        visualize_learning_curves(
-            history.history,
-            metrics=['loss', 'accuracy'] + [m for m in model.metrics_names if m not in ['loss', 'accuracy']],
-            filename=f"{model_name}_learning_curves.png",
-            output_dir=str(output_dir_path)
-        )
-    except NameError:
-        logger.error("visualize_learning_curves is not defined. Skipping learning curve plot.")
-    except Exception as e_vis:
-        logger.error(f"Error generating learning curves for {model_name}: {e_vis}")
-
-    logger.info(f"Confidence-weighted model training completed for {model_name}. Best model saved to: {checkpoint_path}")
-    return model, history

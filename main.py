@@ -23,6 +23,9 @@ def main():
                         help="Directory containing light curves for confirmed exoplanets.")
     parser.add_argument('--false_positives_dir', type=str, required=True,
                         help="Directory containing light curves for known false positives.")
+    parser.add_argument('--split_type', type=str, default='all',
+                        choices=['all', '50_50'],
+                        help="Type of data split to use: 'all' for full dataset, '50_50' for 50/50 split of planets and false positives.")
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -37,17 +40,35 @@ def main():
     logger.info(f"Arguments: {args}")
 
     logger.info("Fetching local data files...")
-    typed_light_curve_files = smart_data_fetcher(
+    all_typed_light_curve_files = smart_data_fetcher(
         confirmed_planet_dir=args.planets_dir,
         false_positive_dir=args.false_positives_dir
     )
 
-    if not typed_light_curve_files:
+    if not all_typed_light_curve_files:
         logger.warning("No light curve files found. Exiting.")
         return 1
 
+    typed_light_curve_files_to_process = []
+    if args.split_type == '50_50':
+        logger.info("Applying 50/50 split to data...")
+        planets = [f for f in all_typed_light_curve_files if f['type'] == config.FILE_TYPE_CONFIRMED_PLANET]
+        false_positives = [f for f in all_typed_light_curve_files if f['type'] == config.FILE_TYPE_FALSE_POSITIVE]
+
+        # Take 50% of each, ensuring we don't go over the available count
+        num_planets = len(planets) // 2
+        num_false_positives = len(false_positives) // 2
+
+        typed_light_curve_files_to_process.extend(planets[:num_planets])
+        typed_light_curve_files_to_process.extend(false_positives[:num_false_positives])
+        logger.info(f"Selected {len(planets[:num_planets])} planets and {len(false_positives[:num_false_positives])} false positives for 50/50 split.")
+    else:
+        typed_light_curve_files_to_process = all_typed_light_curve_files
+        logger.info("Using all fetched data files.")
+
+
     run_enhanced_pipeline(
-        light_curve_files=typed_light_curve_files,
+        light_curve_files=typed_light_curve_files_to_process,
         output_dir_str=str(output_dir)
     )
     logger.info("Pipeline execution finished.")
