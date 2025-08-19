@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 import config
-from data.dataset_generator import create_dataset
+from data.dataset_generator import create_dataset, balance_dataset
 from data.augmentation_utils import augment_data
 from models.multimodal_model import build_multimodal_fusion_model
 from models.model_trainer import train_enhanced_model
@@ -58,8 +58,11 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         logger.error(f"Dataset contains only one class. Cannot train model.")
         return {'error': 'Single class dataset'}
 
-    logger.info("Augmenting and balancing the multimodal dataset...")
-    X_img, X_ts, y = augment_data([X_img, X_ts], y)
+    logger.info("Balancing the entire dataset using SMOTE...")
+    X_balanced_list, y_balanced = balance_dataset([X_img, X_ts], y)
+    X_img = X_balanced_list[0]
+    X_ts = X_balanced_list[1]
+    y = y_balanced
     
     X_ts_train, X_ts_val, X_img_train, X_img_val, y_train, y_val = train_test_split(
         X_ts, X_img, y, test_size=0.2, random_state=42, stratify=y
