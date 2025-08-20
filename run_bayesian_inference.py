@@ -134,7 +134,7 @@ def run_inference(args):
 
     # --- 4. Evaluate Uncertainty Quality ---
     logger.info("Evaluating uncertainty quality...")
-        uncertainty_metrics = get_uncertainty_metrics(y_true, y_pred_mean)
+            uncertainty_metrics = get_uncertainty_metrics(y_true, y_pred_mean)
     logger.info(f"Expected Calibration Error (ECE): {uncertainty_metrics['expected_calibration_error']:.4f}")
     logger.info(f"Brier Score: {uncertainty_metrics['brier_score']:.4f}")
 
