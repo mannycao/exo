@@ -162,5 +162,3 @@ We welcome contributions to this project! Please follow these steps:
 -   **Web Interface**: Create a simple web-based interface for easier interaction and visualization of results.
 -   **Continuous Integration/Deployment (CI/CD)**: Set up automated testing and deployment pipelines.
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
