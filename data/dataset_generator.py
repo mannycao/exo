@@ -13,6 +13,8 @@ from functools import partial
 from astropy.timeseries import LombScargle
 import config
 
+from tqdm import tqdm
+
 logger = logging.getLogger(__name__)
 
 def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
@@ -69,7 +71,7 @@ def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
         logger.error(f"FAILED to process {os.path.basename(file_path)}. Error: {e}. Skipping.")
         return None
 
-def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 64), max_workers=os.cpu_count()):
+def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 64), max_workers=os.cpu_count() * 2):
     """
     Creates a multimodal dataset (1D time-series, 2D image, and engineered features) from FITS files.
     """
@@ -87,7 +89,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         process_func = partial(process_single_file, metadata_df=metadata_df, image_size=image_size, FIXED_LENGTH=FIXED_LENGTH)
         
-        results = list(executor.map(process_func, file_info_list))
+        results = list(tqdm(executor.map(process_func, file_info_list), total=len(file_info_list), desc="Processing Light Curves"))
 
     for result in results:
         if result is not None:

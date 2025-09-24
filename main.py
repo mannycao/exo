@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--split_type', type=str, default='all',
                         choices=['all', '50_50'],
                         help="Type of data split to use: 'all' for full dataset, '50_50' for 50/50 split of planets and false positives.")
+    parser.add_argument('--limit', type=int, default=None,
+                        help="Limit the number of files to process for testing purposes.")
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -66,6 +68,9 @@ def main():
         typed_light_curve_files_to_process = all_typed_light_curve_files
         logger.info("Using all fetched data files.")
 
+    if args.limit is not None and args.limit > 0:
+        typed_light_curve_files_to_process = typed_light_curve_files_to_process[:args.limit]
+        logger.info(f"Limiting processing to {len(typed_light_curve_files_to_process)} files due to --limit argument.")
 
     run_enhanced_pipeline(
         light_curve_files=typed_light_curve_files_to_process,

@@ -52,29 +52,37 @@ def download_kepler_light_curves(kic_id, output_dir):
         int: The number of files successfully downloaded for this KIC ID.
     """
     try:
-        # Query MAST for observations of the KIC ID
+        print(f"DEBUG: Querying MAST for KIC {kic_id}...")
         obs_table = Observations.query_object(f"KIC {kic_id}", radius=".001 deg")
+        print(f"DEBUG: obs_table for KIC {kic_id}: {len(obs_table)} observations found.")
         
-        # Filter for Kepler light curves
-        kepler_products = Observations.get_product_list(obs_table)
-        
-        # We are interested in the long-cadence light curves (_llc.fits)
-        products_to_download = Observations.filter_products(kepler_products,
-                                                            productSubGroupDescription="LC")
-        
-        if len(products_to_download) == 0:
-            # This can happen if there are no public long-cadence light curves
+        if len(obs_table) == 0:
+            print(f"DEBUG: No observations found for KIC {kic_id}.")
             return 0
 
-        # Download the products
-        # Note: astroquery will save files in a 'mastDownload' subdirectory.
+        kepler_products = Observations.get_product_list(obs_table)
+        print(f"DEBUG: kepler_products for KIC {kic_id}: {len(kepler_products)} products found.")
+
+        if len(kepler_products) == 0:
+            print(f"DEBUG: No Kepler products found for KIC {kic_id}.")
+            return 0
+        
+        products_to_download = Observations.filter_products(kepler_products,
+                                                            productSubGroupDescription="LC")
+        print(f"DEBUG: products_to_download for KIC {kic_id}: {len(products_to_download)} LC products found.")
+        
+        if len(products_to_download) == 0:
+            print(f"DEBUG: No long-cadence light curves found for KIC {kic_id}.")
+            return 0
+
         manifest = Observations.download_products(products_to_download,
                                                   download_dir=output_dir)
         
-        return len(manifest) if manifest else 0
+        downloaded_count = len(manifest) if manifest else 0
+        print(f"DEBUG: Successfully downloaded {downloaded_count} files for KIC {kic_id}.")
+        return downloaded_count
     except Exception as e:
-        # Log the error for the specific KIC ID
-        # print(f"Error downloading data for KIC {kic_id}: {e}")
+        print(f"ERROR: Exception during download for KIC {kic_id}: {e}")
         return 0
 
 def main():
