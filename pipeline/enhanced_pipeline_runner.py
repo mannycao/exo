@@ -49,6 +49,7 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
     try:
         X_ts = np.load(processed_data_dir / 'X_timeseries.npy')
         X_img = np.load(processed_data_dir / 'X_images.npy')
+        X_features = np.load(processed_data_dir / 'X_features.npy')
         y = np.load(processed_data_dir / 'y_labels.npy')
     except FileNotFoundError:
         logger.error("Could not find multimodal dataset files. Aborting.")
@@ -60,26 +61,27 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
 
     
     
-    X_ts_train, X_ts_val, X_img_train, X_img_val, y_train, y_val = train_test_split(
-        X_ts, X_img, y, test_size=0.2, random_state=42, stratify=y
+    X_ts_train, X_ts_val, X_img_train, X_img_val, X_features_train, X_features_val, y_train, y_val = train_test_split(
+        X_ts, X_img, X_features, y, test_size=0.2, random_state=42, stratify=y
     )
 
     logger.info("Building the multimodal fusion model...")
     model = build_multimodal_fusion_model(
         image_shape=X_img_train.shape[1:],
-        timeseries_shape=X_ts_train.shape[1:]
+        timeseries_shape=X_ts_train.shape[1:],
+        feature_shape=X_features_train.shape[1:]
     )
 
     logger.info("Training the multimodal model...")
     
     # --- THIS IS THE FIX ---
-    # The order of inputs now matches the model definition: image first, then time-series.
+    # The order of inputs now matches the model definition: image, time-series, and features.
     model, history = train_enhanced_model(
         model=model,
         model_name="exo_multimodal_model",
-        X_train=[X_img_train, X_ts_train], # Correct order
+        X_train=[X_img_train, X_ts_train, X_features_train], # Correct order
         y_train=y_train,
-        X_val=[X_img_val, X_ts_val],     # Correct order
+        X_val=[X_img_val, X_ts_val, X_features_val],     # Correct order
         y_val=y_val,
         output_dir=result_dir
     )
@@ -97,6 +99,11 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
             'cnn_history': history.history,
             'cnn_metrics': {k: v[-1] for k, v in history.history.items()}
         }
+        # Add custom metrics to the model_results for reporting
+        model_results['cnn_metrics']['val_precision_custom'] = history.history['val_precision_custom'][-1]
+        model_results['cnn_metrics']['val_recall_custom'] = history.history['val_recall_custom'][-1]
+        model_results['cnn_metrics']['val_f1_custom'] = history.history['val_f1_custom'][-1]
+
         report_results = [{'file_path': item['file_path'], 'success': True} for item in light_curve_files]
         report_path = generate_report(
             results=report_results,

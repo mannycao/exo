@@ -33,18 +33,7 @@ except ImportError:
         logging.error("Could not import config.py in model_trainer.py. Using dummy config.")
 
 # Assuming utils.metrics contains focal_loss and utils.visualization contains visualize_learning_curves
-try:
-    from utils.metrics import focal_loss 
-    from utils.visualization import visualize_learning_curves 
-except ImportError as e:
-    logging.error(f"Could not import helper functions from utils: {e}. Ensure utils directory is accessible.")
-    # Define dummy functions if imports fail, to prevent further NameErrors, though functionality will be lost
-    def focal_loss(gamma=2., alpha=.25): # Dummy
-        logging.warning("Using dummy focal_loss function due to import error.")
-        return 'binary_crossentropy' 
-    def visualize_learning_curves(history, metrics, filename, output_dir): # Dummy
-        logging.warning("Using dummy visualize_learning_curves function due to import error.")
-        pass
+from models.enhanced_trainer import visualize_enhanced_learning_curves, focal_loss
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +126,7 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
         logger.info(f"Training multimodal model {model_name} with {len(X_train)} inputs.")
         # Ensure X_val is also a list of the same length
         if not isinstance(X_val, list) or len(X_val) != len(X_train):
-            logger.error("X_val must be a list of same length as X_train for multimodal input.")
+            logger.error("X_val structure mismatch for multimodal input.")
             # Handle error appropriately, e.g., by raising an exception or returning
             raise ValueError("X_val structure mismatch for multimodal input.")
     else:
@@ -157,21 +146,28 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     history_df = pd.DataFrame(history.history)
     history_df.to_csv(history_path)
 
-    try:
-        visualize_enhanced_learning_curves(
-            history.history, 
-            metrics=['loss', 'accuracy', 'precision', 'recall', 'roc_auc', 'pr_auc'], 
-            filename=f"{model_name}_learning_curves.png",
-            output_dir=str(output_dir_path)
-        )
-    except NameError: # In case visualize_learning_curves couldn't be imported
-        logger.error("visualize_learning_curves is not defined. Skipping learning curve plot.")
-    except Exception as e_vis:
-        logger.error(f"Error generating learning curves for {model_name}: {e_vis}")
+    # Manually calculate metrics with a custom threshold for validation
+    y_pred_val_raw = model.predict(X_val)
+    custom_threshold = 0.40 # Optimal threshold found from analysis
+    y_pred_val_thresholded = (y_pred_val_raw >= custom_threshold).astype(int)
+
+    from sklearn.metrics import precision_score, recall_score, f1_score
+    val_precision_custom = precision_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+    val_recall_custom = recall_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+    val_f1_custom = f1_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+
+    # Update history with custom threshold metrics for reporting
+    history.history['val_precision_custom'] = [val_precision_custom] * len(history.history['val_loss'])
+    history.history['val_recall_custom'] = [val_recall_custom] * len(history.history['val_loss'])
+    history.history['val_f1_custom'] = [val_f1_custom] * len(history.history['val_loss'])
+
+    visualize_enhanced_learning_curves(
+        history.history, 
+        metrics=['loss', 'accuracy', 'precision', 'recall', 'roc_auc', 'pr_auc', 'val_precision_custom', 'val_recall_custom', 'val_f1_custom'], 
+        filename=f"{model_name}_learning_curves.png",
+        output_dir=str(output_dir_path)
+    )
 
 
     logger.info(f"Enhanced model training completed for {model_name}. Best model saved to: {checkpoint_path}")
     return model, history
-
-
-

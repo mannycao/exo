@@ -39,7 +39,7 @@ def visualize_transit(time, flux, transit_info=None, title=None, filename=None, 
         for idx, width in zip(transit_info['peak_indices'], transit_info['widths']):
             half_width = int(width / 2)
             left_idx = max(0, idx - half_width)
-            right_idx = min(len(flux) - 1, idx + half_width)
+            right_idx = min(len(flux) - 1, idx + half_duration)
             plt.axvspan(time[left_idx], time[right_idx], color='red', alpha=0.2)
     
     plt.xlabel('Time (BKJD)')
@@ -290,7 +290,11 @@ def visualize_model_comparison(model_metrics, title=None, filename=None, output_
     if not model_metrics:
         logger.warning("No model metrics provided for comparison")
         return
-    
+
+    # Define a new, more distinct color palette
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', 
+              '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78']
+
     # Get common metrics across all models
     common_metrics = set.intersection(*[set(metrics.keys()) for metrics in model_metrics.values()])
     # Filter to typical classification metrics
@@ -318,14 +322,16 @@ def visualize_model_comparison(model_metrics, title=None, filename=None, output_
     
     for i, metric in enumerate(metrics_to_plot):
         offset = (i - len(metrics_to_plot) / 2 + 0.5) * bar_width
-        plt.bar(x + offset, df[metric], width=bar_width, label=metric)
+        plt.bar(x + offset, df[metric], width=bar_width, label=metric, color=colors[i % len(colors)])
     
     plt.xlabel('Model')
     plt.ylabel('Score')
     plt.title(title or 'Model Comparison')
     plt.xticks(x, df['Model'])
-    plt.legend()
+    # Move legend outside the plot
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid(True, alpha=0.3)
+    plt.tight_layout() # Adjust layout to make room for legend
     
     if filename:
         if output_dir:
@@ -477,4 +483,4 @@ def visualize_uncertainty_distribution(uncertainty, predictions, y_true, title=N
             logger.error(f"Failed to save uncertainty distribution plot to {full_path}: {e}")
         plt.close()
     else:
-        plt.show()
+        plt.show() 
