@@ -31,6 +31,9 @@ BLS_POWER_THRESHOLD = 0.1 # Added this line
 WINDOW_SIZE = 1.0
 IMAGE_SIZE = (64, 64)
 
+FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
+FEATURE_VECTOR_LENGTH = 512 # New parameter for feature vector length
+
 # --- File Type Constants ---
 FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
 FILE_TYPE_FALSE_POSITIVE = 'false_positive'

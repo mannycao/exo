@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from astropy.timeseries import LombScargle
 import config
-
+import time
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -22,48 +22,63 @@ def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
     file_path, current_label = file_info
     
     try:
+        start_file_processing = time.time()
+
         with fits.open(file_path, mode='readonly') as hdul:
             data = hdul[1].data
-            time = data.field('TIME')
-            flux = data.field('PDCSAP_FLUX')
+            time_lc = data.field('TIME')
+            flux_lc = data.field('PDCSAP_FLUX')
 
-            finite_mask = np.isfinite(flux) & np.isfinite(time)
-            time = time[finite_mask]
-            flux = flux[finite_mask]
+            finite_mask = np.isfinite(flux_lc) & np.isfinite(time_lc)
+            time_lc = time_lc[finite_mask]
+            flux_lc = flux_lc[finite_mask]
 
-            if len(flux) < 100:
+            if len(flux_lc) < 100:
                 logger.warning(f"Skipping {os.path.basename(file_path)}: Not enough finite data points.")
                 return None
 
             period = np.random.uniform(1, 100)
 
-            flux_norm = (flux - np.median(flux)) / np.std(flux)
+            flux_norm = (flux_lc - np.median(flux_lc)) / np.std(flux_lc)
             start = max(0, len(flux_norm) // 2 - FIXED_LENGTH // 2)
             segment = flux_norm[start : start + FIXED_LENGTH]
             if len(segment) < FIXED_LENGTH:
                 segment = np.pad(segment, (0, FIXED_LENGTH - len(segment)), 'constant', constant_values=0)
             
             # Feature Engineering
-            frequency, power = LombScargle(time, flux).autopower()
+            start_feature_engineering = time.time()
+            # Limit frequency range to Nyquist frequency for efficiency
+            if len(time_lc) > 1:
+                nyquist_frequency = 0.5 / (time_lc[1] - time_lc[0])
+                frequency, power = LombScargle(time_lc, flux_lc).autopower(nyquist_factor=1, maximum_frequency=nyquist_frequency)
+            else:
+                frequency, power = LombScargle(time_lc, flux_lc).autopower()
             autocorr = np.correlate(flux_norm, flux_norm, mode='full')[len(flux_norm)-1:]
 
             # Resize features to a fixed length
-            power = resize(power, (FIXED_LENGTH,), preserve_range=True, anti_aliasing=False)
-            autocorr = resize(autocorr, (FIXED_LENGTH,), preserve_range=True, anti_aliasing=False)
+            power = resize(power, (config.FEATURE_VECTOR_LENGTH,), preserve_range=True, anti_aliasing=False)
+            autocorr = resize(autocorr, (config.FEATURE_VECTOR_LENGTH,), preserve_range=True, anti_aliasing=False)
 
             feature_vector = np.hstack([power, autocorr])
+            feature_engineering_time = time.time() - start_feature_engineering
 
-            if len(time) != len(flux):
+            # Image Generation
+            start_image_generation = time.time()
+            if len(time_lc) != len(flux_lc):
                 logger.warning(f"Time and flux length mismatch for {os.path.basename(file_path)}. Skipping phase folding for 2D image.")
                 img_1d = segment[:image_size[0] * image_size[1]]
                 if len(img_1d) < image_size[0] * image_size[1]:
                     img_1d = np.pad(img_1d, (0, image_size[0] * image_size[1] - len(img_1d)), 'constant', constant_values=0)
                 img_2d = img_1d.reshape(image_size)
             else:
-                binned_flux = advanced_phase_folding(time, flux, period, n_bins=image_size[0] * image_size[1])
+                binned_flux = advanced_phase_folding(time_lc, flux_lc, period, n_bins=image_size[0] * image_size[1])
                 img_2d = binned_flux.reshape(image_size)
 
             img_norm = (img_2d - np.min(img_2d)) / (np.max(img_2d) - np.min(img_2d) + 1e-8)
+            image_generation_time = time.time() - start_image_generation
+            
+            end_file_processing = time.time()
+            logger.debug(f"Processed {os.path.basename(file_path)} in {end_file_processing - start_file_processing:.4f}s (Features: {feature_engineering_time:.4f}s, Image: {image_generation_time:.4f}s)")
             
             return segment, img_norm, feature_vector, (1 if current_label == 'confirmed_planet' else 0)
 
@@ -71,12 +86,14 @@ def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
         logger.error(f"FAILED to process {os.path.basename(file_path)}. Error: {e}. Skipping.")
         return None
 
-def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 64), max_workers=os.cpu_count() * 2):
+def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 64), max_workers=os.cpu_count()):
     """
     Creates a multimodal dataset (1D time-series, 2D image, and engineered features) from FITS files.
     """
     logger.info(f"Starting multimodal dataset creation with {len(file_paths)} files using {max_workers} workers.")
     
+    start_time = time.time()
+
     all_timeseries = []
     all_images = []
     all_features = []
@@ -90,6 +107,9 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
         process_func = partial(process_single_file, metadata_df=metadata_df, image_size=image_size, FIXED_LENGTH=FIXED_LENGTH)
         
         results = list(tqdm(executor.map(process_func, file_info_list), total=len(file_info_list), desc="Processing Light Curves"))
+
+    file_processing_time = time.time() - start_time
+    logger.info(f"File processing completed in {file_processing_time:.2f} seconds.")
 
     for result in results:
         if result is not None:
@@ -109,11 +129,18 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     y = np.array(all_labels)
 
     # Augment data
+    augmentation_start_time = time.time()
     X_img_aug, X_ts_aug, X_features_aug, y_aug = augment_data([X_img, X_ts, X_features], y, augmentation_factor=config.AUGMENTATION_FACTOR)
+    augmentation_time = time.time() - augmentation_start_time
+    logger.info(f"Data augmentation completed in {augmentation_time:.2f} seconds.")
 
+    # Save data
+    save_start_time = time.time()
     np.save(os.path.join(output_dir, 'X_timeseries.npy'), X_ts_aug)
     np.save(os.path.join(output_dir, 'X_images.npy'), X_img_aug)
     np.save(os.path.join(output_dir, 'X_features.npy'), X_features_aug)
     np.save(os.path.join(output_dir, 'y_labels.npy'), y_aug)
+    save_time = time.time() - save_start_time
+    logger.info(f"Data saving completed in {save_time:.2f} seconds.")
     
     logger.info(f"Multimodal dataset created and augmented successfully with {len(y_aug)} samples.)")

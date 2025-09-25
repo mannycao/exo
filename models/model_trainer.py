@@ -44,6 +44,9 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     """
     Trains an AI model with enhanced techniques for imbalanced data.
     """
+    # Enable mixed precision training for potential speedup
+    tf.keras.mixed_precision.set_global_policy('mixed_float16')
+
     epochs = epochs or config.EPOCHS
     batch_size = batch_size or config.BATCH_SIZE
     # This was the line causing the error: Path was not defined. It is now fixed by the import.
