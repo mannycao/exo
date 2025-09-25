@@ -4,6 +4,9 @@ Functions for modeling transits and estimating planet properties.
 """
 import logging
 import numpy as np
+from astropy.timeseries import BoxLeastSquares
+import config
+from datetime import datetime
 
 # Use a try-except block for batman import as it might not be installed
 try:
@@ -158,3 +161,114 @@ def estimate_planet_properties(transit_info, periodicity_data, stellar_propertie
     except Exception as e:
         logger.error(f"Error during planet property estimation: {e}", exc_info=True)
         return None
+
+def find_transits_bls(time, flux):
+    """
+    Performs Box-Least-Squares (BLS) transit detection.
+    """
+    logger.info("Running BLS transit detection.")
+
+    if len(time) == 0 or len(flux) == 0:
+        logger.info("Skipping BLS: time or flux array is empty.")
+        return None, None
+
+    if np.isnan(time).any() or np.isinf(time).any():
+        logger.info("Skipping BLS: time array contains NaN or Inf values.")
+        return None, None
+
+    if np.isnan(flux).any() or np.isinf(flux).any():
+        logger.info("Skipping BLS: flux array contains NaN or Inf values.")
+        return None, None
+
+    if np.std(flux) < 1e-6: # Check for nearly constant flux
+        logger.info("Skipping BLS: flux array is nearly constant.")
+        return None, None
+
+    if not np.all(np.diff(time) > 0): # Check for monotonic increasing time
+        logger.info("Skipping BLS: time array is not monotonically increasing.")
+        return None, None
+
+    logger.debug(f"BLS input time shape: {time.shape}, min: {time.min():.2f}, max: {time.max():.2f}, has NaNs: {np.isnan(time).any()}")
+    logger.debug(f"BLS input flux shape: {flux.shape}, min: {flux.min():.2f}, max: {flux.max():.2f}, has NaNs: {np.isnan(flux).any()}")
+
+    # Define minimum and maximum transit durations from config
+    min_duration = config.MIN_TRANSIT_DURATION
+    max_duration = config.MAX_TRANSIT_DURATION
+
+    # Create a BLS object
+    model = BoxLeastSquares(time, flux)
+
+    # Calculate the periodogram
+    # Use a more refined period grid based on the data duration
+    min_period = max(config.MAX_TRANSIT_DURATION * 2, 0.5) # At least twice max_duration, and not less than 0.5 days
+    max_period = (time[-1] - time[0]) / 2.0 # Max period is half the observation span
+
+    if max_period <= min_period:
+        logger.info(f"Skipping BLS: max_period ({max_period:.2f}) is not greater than min_period ({min_period:.2f}).")
+        return None, None
+
+    # Ensure a reasonable range for periods to avoid issues with np.linspace
+    if (max_period - min_period) < 1e-5: # Arbitrary small threshold
+        logger.info(f"Skipping BLS: Period range ({max_period - min_period:.2e}) is too small.")
+        return None, None
+
+    periods = np.linspace(min_period, max_period, 1000)
+
+    # Create an array of durations to test
+    durations = np.linspace(config.MIN_TRANSIT_DURATION, config.MAX_TRANSIT_DURATION, 10)
+
+    logger.debug(f"BLS periods array shape: {periods.shape}, min: {periods.min():.2f}, max: {periods.max():.2f}")
+    logger.debug(f"BLS durations array shape: {durations.shape}, min: {durations.min():.2f}, max: {durations.max():.2f}")
+    logger.debug(f"BLS min_period: {min_period:.2f}, max_period: {max_period:.2f}")
+
+    try:
+        results = model.power(periods, durations, oversample=10)
+    except Exception as e:
+        logger.error(f"BLS model.power() failed for file (data saved to {problematic_data_dir}): {type(e).__name__}: {e}", exc_info=True)
+        # Fallback: return empty transit info if BLS fails
+        transit_info = {
+            'times': np.array([]),
+            'depths': np.array([]),
+            'durations': np.array([]),
+            'peak_indices': np.array([])
+        }
+        periodicity_data = {
+            'median_period': None,
+            'periodogram': {
+                'period': [],
+                'power': [],
+                'best_period': None,
+                'peak_periods': []
+            }
+        }
+        return transit_info, periodicity_data
+
+    # Find the period with the highest power
+    best_period_idx = np.argmax(results.power)
+    best_period = results.period[best_period_idx]
+    best_t0 = results.transit_time[best_period_idx]
+    best_duration = results.duration[best_period_idx]
+    best_depth = results.depth[best_period_idx]
+
+    if results.power[best_period_idx] < config.BLS_POWER_THRESHOLD:
+        logger.info(f"No significant transit detected with BLS (max power: {results.power[best_period_idx]:.2f} below threshold {config.BLS_POWER_THRESHOLD}).")
+        return None, None
+
+    # Populate transit_info and periodicity_data
+    transit_info = {
+        'times': np.array([best_t0]),
+        'depths': np.array([best_depth]),
+        'durations': np.array([best_duration]),
+        'peak_indices': np.array([np.argmin(np.abs(time - best_t0))]) # Approximate index
+    }
+    periodicity_data = {
+        'median_period': best_period,
+        'periodogram': {
+            'period': results.period.tolist(),
+            'power': results.power.tolist(),
+            'best_period': best_period,
+            'peak_periods': [best_period]
+        }
+    }
+    logger.info(f"BLS detected transit: Period={best_period:.4f}, t0={best_t0:.4f}, Duration={best_duration:.4f}, Depth={best_depth:.4f}")
+    return transit_info, periodicity_data

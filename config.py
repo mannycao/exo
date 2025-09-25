@@ -39,9 +39,9 @@ FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
 FILE_TYPE_FALSE_POSITIVE = 'false_positive'
 
 # --- OPTIMIZATION 2: Model Training Hyperparameters (Updated with your results) ---
-EPOCHS = 35                # From your optimization results
-BATCH_SIZE = 32            # Increased for potential speedup
-EARLY_STOPPING_PATIENCE = 10 # Kept as a sensible default
+EPOCHS = 25                # From your optimization results
+BATCH_SIZE = 64           # Increased for potential speedup
+EARLY_STOPPING_PATIENCE = 5 # Kept as a sensible default
 
 LEARNING_RATE = 0.01      # From your optimization results
 
@@ -50,7 +50,7 @@ FOCAL_LOSS_ALPHA = 0.25
 FOCAL_LOSS_GAMMA = 2.5
 
 # --- Pipeline Execution Parameters ---
-DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 4
+DEFAULT_MAX_WORKERS = os.cpu_count() if os.cpu_count() else 8
 USE_MULTIMODAL = True
 USE_CACHE = True
 AUGMENTATION_FACTOR = 1 # Reduced for potential speedup

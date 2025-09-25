@@ -258,11 +258,10 @@ def generate_html_report(results, model_results, timestamp, output_dir):
         )[:10]
         
         for result in best_results:
-            result_dir = result.get('result_dir', '')
-            if result_dir:
-                light_curve_path = os.path.join(result_dir, 'light_curve.png')
-                if os.path.exists(light_curve_path):
-                    rel_path = os.path.relpath(light_curve_path, output_dir)
+            light_curve_plot_path = result.get('light_curve_plot_path', '')
+            if light_curve_plot_path:
+                if os.path.exists(light_curve_plot_path):
+                    rel_path = os.path.relpath(light_curve_plot_path, output_dir)
                     file_name = os.path.basename(result.get('file_path', ''))
                     f.write(f"        <div class='gallery-item'><img src='{rel_path}' alt='{file_name}'><p>{file_name}</p></div>\n")
         

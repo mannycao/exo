@@ -37,7 +37,7 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         return None
     exoplanet_metadata_df = pd.read_csv(metadata_path)
 
-    create_dataset(
+    X_ts, X_img, X_features, y, all_pipeline_results = create_dataset(
         file_paths=[item['file_path'] for item in light_curve_files],
         labels=[item['type'] for item in light_curve_files],
         output_dir=processed_data_dir,
@@ -46,13 +46,8 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
     )
     
     logger.info("Loading multimodal dataset for training...")
-    try:
-        X_ts = np.load(processed_data_dir / 'X_timeseries.npy')
-        X_img = np.load(processed_data_dir / 'X_images.npy')
-        X_features = np.load(processed_data_dir / 'X_features.npy')
-        y = np.load(processed_data_dir / 'y_labels.npy')
-    except FileNotFoundError:
-        logger.error("Could not find multimodal dataset files. Aborting.")
+    if X_ts is None or X_img is None or X_features is None or y is None:
+        logger.error("Could not create multimodal dataset files. Aborting.")
         return None
 
     if len(np.unique(y)) < 2:
@@ -104,9 +99,8 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         model_results['cnn_metrics']['val_recall_custom'] = history.history['val_recall_custom'][-1]
         model_results['cnn_metrics']['val_f1_custom'] = history.history['val_f1_custom'][-1]
 
-        report_results = [{'file_path': item['file_path'], 'success': True} for item in light_curve_files]
         report_path = generate_report(
-            results=report_results,
+            results=all_pipeline_results,
             model_results=model_results,
             timestamp=result_dir.name.replace("run_", ""),
             output_dir=str(result_dir)
