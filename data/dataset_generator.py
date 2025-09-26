@@ -132,7 +132,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     all_images = []
     all_features = []
     all_labels = []
-    all_pipeline_results = [] # To store transit_info, periodicity_data, planet_properties
+    all_pipeline_results_raw = [] # Renamed to avoid confusion with augmented version
     
     FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
 
@@ -153,7 +153,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
             all_images.append(img_norm)
             all_features.append(feature_vector)
             all_labels.append(label)
-            all_pipeline_results.append({
+            all_pipeline_results_raw.append({
                 'file_path': file_info_list[i][0], # Original file path
                 'success': True,
                 'transit_count': len(transit_info.get('times', [])),
@@ -171,20 +171,6 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     X_features = np.array(all_features)
     y = np.array(all_labels)
 
-    # Augment data
-    augmentation_start_time = time.time()
-    X_img_aug, X_ts_aug, X_features_aug, y_aug = augment_data([X_img, X_ts, X_features], y, augmentation_factor=config.AUGMENTATION_FACTOR)
-    augmentation_time = time.time() - augmentation_start_time
-    logger.info(f"Data augmentation completed in {augmentation_time:.2f} seconds.")
-
-    # Save data
-    save_start_time = time.time()
-    np.save(os.path.join(output_dir, 'X_timeseries.npy'), X_ts_aug)
-    np.save(os.path.join(output_dir, 'X_images.npy'), X_img_aug)
-    np.save(os.path.join(output_dir, 'X_features.npy'), X_features_aug)
-    np.save(os.path.join(output_dir, 'y_labels.npy'), y_aug)
-    save_time = time.time() - save_start_time
-    logger.info(f"Data saving completed in {save_time:.2f} seconds.")
-    
-    logger.info(f"Multimodal dataset created and augmented successfully with {len(y_aug)} samples.)")
-    return X_ts_aug, X_img_aug, X_features_aug, y_aug, all_pipeline_results
+    logger.info(f"Multimodal dataset created successfully with {len(y)} samples (before augmentation).")
+    print(f"DEBUG: all_pipeline_results_raw is defined: {'all_pipeline_results_raw' in locals()}") # Add this line
+    return X_ts, X_img, X_features, y, all_pipeline_results_raw

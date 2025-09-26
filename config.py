@@ -19,6 +19,8 @@ DEFAULT_LOG_FILE = RESULTS_DIR / "pipeline_general.log"
 
 # --- Data Fetching ---
 EXOPLANET_ARCHIVE_TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP"
+CONFIRMED_PLANETS_DIR = "/Users/emmanuel/proj/exo/kepler_local_data/confirmed_planets"
+FALSE_POSITIVES_DIR = "/Users/emmanuel/proj/exo/kepler_local_data/false_positives"
 
 # --- OPTIMIZATION 1: More Sensitive Transit Detection ---
 TRANSIT_SENSITIVITY = 2.0

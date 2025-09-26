@@ -69,8 +69,17 @@ def main():
         logger.info("Using all fetched data files.")
 
     if args.limit is not None and args.limit > 0:
-        typed_light_curve_files_to_process = typed_light_curve_files_to_process[:args.limit]
-        logger.info(f"Limiting processing to {len(typed_light_curve_files_to_process)} files due to --limit argument.")
+        logger.info(f"Applying --limit argument: {args.limit}")
+        # Ensure both classes are present when limiting for testing
+        limited_planets = [f for f in typed_light_curve_files_to_process if f['type'] == config.FILE_TYPE_CONFIRMED_PLANET][:args.limit // 2]
+        limited_false_positives = [f for f in typed_light_curve_files_to_process if f['type'] == config.FILE_TYPE_FALSE_POSITIVE][:args.limit // 2]
+        
+        typed_light_curve_files_to_process = limited_planets + limited_false_positives
+        logger.info(f"Limiting processing to {len(typed_light_curve_files_to_process)} files (balanced) due to --limit argument.")
+        
+        if len(typed_light_curve_files_to_process) < 2:
+            logger.error("Limit too small to get at least two classes. Please increase --limit.")
+            return 1
 
     run_enhanced_pipeline(
         light_curve_files=typed_light_curve_files_to_process,
