@@ -3,50 +3,29 @@
 import logging
 import os
 import numpy as np
-import pandas as pd # Added import
-from sklearn.model_selection import train_test_split
-from pathlib import Path
-
-import config
-from data.dataset_generator import create_dataset
-from data.augmentation_utils import augment_data
-from models.multimodal_model import build_multimodal_fusion_model
-from models.model_trainer import train_enhanced_model
-from pipeline.report_generator import generate_report
-
-logger = logging.getLogger(__name__)
-
-def run_enhanced_pipeline(light_curve_files, output_dir_str):
-    """
-    The core pipeline, now upgraded for multimodal data processing and training.
-    """
-    result_dir = Path(output_dir_str)
-    logger.info(f"Enhanced multimodal pipeline runner started. Saving results to {result_dir}")
-
-    processed_data_dir = result_dir / "processed_data"
-    os.makedirs(processed_data_dir, exist_ok=True)
-    
-    logger.info("Creating the multimodal dataset (time-series and images)...")
-    
-import logging
-import os
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from pathlib import Path
-import time # Added import
-import json # Added import
+import time
+import json
 
 import config
 from data.dataset_generator import create_dataset
 from data.augmentation_utils import augment_data
 from models.multimodal_model import build_multimodal_fusion_model
-from models.model_trainer import train_enhanced_model
+from models.enhanced_model_trainer import EnhancedModelTrainer
+from models.model_trainer_utils import train_enhanced_model
 from pipeline.report_generator import generate_report
+
+# CACL XAI Imports
+from xai_cacl_explainer import CACLFeatureExtractor, explain_with_cacl
+from cacl_utils import create_feature_partitions, build_context_groups, compute_dependency_matrix, compute_context_embeddings
+import torch # Required for CACLFeatureExtractor
+
 
 logger = logging.getLogger(__name__)
 
-def run_enhanced_pipeline(light_curve_files, output_dir_str):
+def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
     """
     The core pipeline, now upgraded for multimodal data processing and training.
     """
@@ -115,139 +94,79 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str):
         test_size=0.2, random_state=42, stratify=y_aug
     )
 
-    logger.info("Building the multimodal fusion model...")
-    model = build_multimodal_fusion_model(
-        image_shape=X_img_train.shape[1:],
-        timeseries_shape=X_ts_train.shape[1:],
-        feature_shape=X_features_train.shape[1:]
-    )
-
-    logger.info("Training the multimodal model...")
-    
-    model, history = train_enhanced_model(
-        model=model,
-        model_name="exo_multimodal_model",
-        X_train=[X_img_train, X_ts_train, X_features_train],
-        y_train=y_train,
-        X_val=[X_img_val, X_ts_val, X_features_val],
-        y_val=y_val,
-        output_dir=result_dir
-    )
-    
-    # Make predictions on the validation set
-    y_pred_val = model.predict([X_img_val, X_ts_val, X_features_val])
-    y_pred_val_classes = (y_pred_val > 0.5).astype(int) # Assuming binary classification
-
-    pipeline_results = {
-        'result_dir_actual': str(result_dir),
-        'successfully_processed_count': len(light_curve_files),
-        'transit_count': -1 # This will be updated in report_generator
-    }
-
-    if history:
-        model_results = {
-            'cnn_model': model,
-            'cnn_history': history.history,
-            'cnn_metrics': {k: v[-1] for k, v in history.history.items()}
-        }
-        # Add custom metrics to the model_results for reporting
-        model_results['cnn_metrics']['val_precision_custom'] = history.history['val_precision_custom'][-1]
-        model_results['cnn_metrics']['val_recall_custom'] = history.history['val_recall_custom'][-1]
-        model_results['cnn_metrics']['val_f1_custom'] = history.history['val_f1_custom'][-1]
-
-        report_path = generate_report(
-            results=all_pipeline_results_val, # Pass validation results
-            model_results=model_results,
-            y_true=y_val,
-            y_pred=y_pred_val_classes,
-            timestamp=result_dir.name.replace("run_", ""),
-            output_dir=str(result_dir)
+    if config.USE_MULTIMODAL:
+        logger.info("Building the multimodal fusion model...")
+        multimodal_model = build_multimodal_fusion_model(
+            timeseries_shape=X_ts_train.shape[1:],
+            image_shape=X_img_train.shape[1:],
+            feature_shape=X_features_train.shape[1:]
         )
-        pipeline_results['report_path'] = str(report_path)
 
-    logger.info(f"Enhanced multimodal pipeline finished successfully.")
-    return pipeline_results
-
-    X_ts, X_img, X_features, y, all_pipeline_results = create_dataset(
-        file_paths=[item['file_path'] for item in light_curve_files],
-        labels=[item['type'] for item in light_curve_files],
-        output_dir=processed_data_dir,
-        metadata_df=exoplanet_metadata_df,
-        image_size=config.IMAGE_SIZE
-    )
-    
-    logger.info("Loading multimodal dataset for training...")
-    if X_ts is None or X_img is None or X_features is None or y is None:
-        logger.error("Could not create multimodal dataset files. Aborting.")
-        return None
-
-    if len(np.unique(y)) < 2:
-        logger.error(f"Dataset contains only one class. Cannot train model.")
-        return {'error': 'Single class dataset'}
-
-    
-    
-    X_ts_train, X_ts_val, \
-    X_img_train, X_img_val, \
-    X_features_train, X_features_val, \
-    y_train, y_val, \
-    all_pipeline_results_train, all_pipeline_results_val = train_test_split(
-        X_ts, X_img, X_features, y, all_pipeline_results,
-        test_size=0.2, random_state=42, stratify=y
-    )
-
-    logger.info("Building the multimodal fusion model...")
-    model = build_multimodal_fusion_model(
-        image_shape=X_img_train.shape[1:],
-        timeseries_shape=X_ts_train.shape[1:],
-        feature_shape=X_features_train.shape[1:]
-    )
-
-    logger.info("Training the multimodal model...")
-    
-    # --- THIS IS THE FIX ---
-    # The order of inputs now matches the model definition: image, time-series, and features.
-    model, history = train_enhanced_model(
-        model=model,
-        model_name="exo_multimodal_model",
-        X_train=[X_img_train, X_ts_train, X_features_train], # Correct order
-        y_train=y_train,
-        X_val=[X_img_val, X_ts_val, X_features_val],     # Correct order
-        y_val=y_val,
-        output_dir=result_dir
-    )
-    # ^^^^^^^^^^^^^^^^^^^^^^^^^
-    
-    # Make predictions on the validation set
-    y_pred_val = model.predict([X_img_val, X_ts_val, X_features_val])
-    y_pred_val_classes = (y_pred_val > 0.5).astype(int) # Assuming binary classification
-
-    pipeline_results = {
-        'result_dir_actual': str(result_dir),
-        'successfully_processed_count': len(light_curve_files),
-        'transit_count': -1 # This will be updated in report_generator
-    }
-
-    if history:
-        model_results = {
-            'cnn_model': model,
-            'cnn_history': history.history,
-            'cnn_metrics': {k: v[-1] for k, v in history.history.items()}
-        }
-        # Add custom metrics to the model_results for reporting
-        model_results['cnn_metrics']['val_precision_custom'] = history.history['val_precision_custom'][-1]
-        model_results['cnn_metrics']['val_recall_custom'] = history.history['val_recall_custom'][-1]
-        model_results['cnn_metrics']['val_f1_custom'] = history.history['val_f1_custom'][-1]
-
-        report_path = generate_report(
-            results=all_pipeline_results_val, # Pass validation results
-            model_results=model_results,
-            y_true=y_val,
-            y_pred=y_pred_val_classes,
-            timestamp=result_dir.name.replace("run_", ""),
-            output_dir=str(result_dir)
+        # Initialize the multimodal model trainer
+        trainer = EnhancedModelTrainer(
+            model=multimodal_model,
+            output_dir=output_dir_str,
+            use_bayesian=True,
+            use_cacl=True,  # Key change: Enable CACL
+            cacl_model_path=config.CACL_MODEL_PATH
         )
-        pipeline_results['report_path'] = str(report_path)
 
-    logger.info(f"Enhanced multimodal pipeline finished successfully.")
-    return pipeline_results
+        # Prepare CACL context if enabled
+        if trainer.use_cacl:
+            logger.info("Initializing CACL Explainer and preparing context...")
+            # Create CACL partitions based on the training data
+            # For time-series data, partitions are typically contiguous segments
+            sample_light_curve_length = X_ts_train.shape[1]
+            partition_size = sample_light_curve_length // config.CACL_K_PARTITIONS
+            cacl_partitions = [] # Initialize to empty list
+            cacl_partitions = [[j for j in range(i * partition_size, (i + 1) * partition_size)] for i in range(config.CACL_K_PARTITIONS - 1)]
+            cacl_partitions.append([j for j in range((config.CACL_K_PARTITIONS - 1) * partition_size, sample_light_curve_length)])
+            cacl_partitions = [p for p in cacl_partitions if p] # Filter out empty partitions
+
+            trainer.cacl_explainer.partitions = cacl_partitions # Update explainer with actual partitions
+
+            # Pre-compute context embeddings and dependency matrix
+            # This is done once after data loading and before training/explanation generation
+            # The trainer will handle the actual computation when get_cacl_explanations is called
+            logger.info("CACL Explainer and context prepared.")
+
+        # Prepare datasets for the trainer
+        train_dataset = (X_ts_train, X_img_train, X_features_train, y_train)
+        validation_dataset = (X_ts_val, X_img_val, X_features_val, y_val)
+
+        logger.info("Training the multimodal model...")
+        history, y_val_actual, y_pred_val_raw, cnn_metrics = trainer.train(
+            train_dataset,
+            validation_dataset,
+            epochs=config.EPOCHS,
+            batch_size=config.BATCH_SIZE
+        )
+
+        # After training, get CACL explanations
+        cacl_explanations = {}
+        if trainer.use_cacl:
+            logger.info("Generating CACL explanations...")
+            logger.debug(f"Validation Dataset Length: {len(validation_dataset[0])}")
+            logger.debug(f"X_ts_val shape: {validation_dataset[0].shape}")
+            cacl_explanations = trainer.get_cacl_explanations(validation_dataset, cacl_partitions)
+            logger.info("CACL explanations generated.")
+
+        model_report_data = {
+            'cnn_metrics': cnn_metrics,
+            'cacl_explanations': cacl_explanations
+        }
+
+        generate_report(
+            results=all_pipeline_results_val,
+            model_results=model_report_data,
+            y_true=y_val_actual,
+            y_pred=y_pred_val_raw,
+            timestamp=timestamp,
+            output_dir=result_dir
+        )
+
+        logger.info("Enhanced multimodal pipeline finished successfully.")
+        return 0
+    else:
+        logger.info("Skipping multimodal model training as USE_MULTIMODAL is False.")
+        return 0

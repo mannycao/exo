@@ -83,7 +83,8 @@ def main():
 
     run_enhanced_pipeline(
         light_curve_files=typed_light_curve_files_to_process,
-        output_dir_str=str(output_dir)
+        output_dir_str=str(output_dir),
+        timestamp=timestamp
     )
     logger.info("Pipeline execution finished.")
     return 0

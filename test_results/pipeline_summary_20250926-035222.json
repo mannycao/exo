@@ -1,0 +1,41 @@
+{
+  "timestamp": "20250926-035222",
+  "total_files": 2,
+  "successful_processing": 2,
+  "transit_detections": 2,
+  "periodicity_found": 2,
+  "planet_properties": 2,
+  "model_metrics": {
+    "accuracy": 0.9,
+    "precision": 0.8,
+    "recall": 0.7
+  },
+  "classification_counts": {
+    "true_positives": 1,
+    "false_positives": 1,
+    "true_negatives": 0,
+    "false_negatives": 0
+  },
+  "results": [
+    {
+      "file_path": "/path/to/file1",
+      "classification": "True Positive",
+      "periodicity": 10.0,
+      "planet_properties": {
+        "radius_earth": 1.0,
+        "semi_major_axis_au": 0.1,
+        "equilibrium_temp_k": 300
+      }
+    },
+    {
+      "file_path": "/path/to/file2",
+      "classification": "False Positive",
+      "periodicity": 20.0,
+      "planet_properties": {
+        "radius_earth": 2.0,
+        "semi_major_axis_au": 0.2,
+        "equilibrium_temp_k": 400
+      }
+    }
+  ]
+}

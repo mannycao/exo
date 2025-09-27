@@ -34,7 +34,7 @@ def main():
     output_dir_str = str(config.RESULTS_DIR / f"run_{timestamp}")
 
     # Run the main pipeline with the correct arguments
-    run_enhanced_pipeline(light_curve_files, output_dir_str)
+    run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp)
 
     logger.info("Enhanced exoplanet detection pipeline finished.")
 

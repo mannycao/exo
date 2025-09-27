@@ -9,7 +9,9 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from sklearn.utils.class_weight import compute_class_weight
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
+from pathlib import Path # <<<<<<<<<<<< IMPORT ADDED HERE
+from sklearn.metrics import precision_score, recall_score, f1_score # Moved to module level
 
 import config
 
@@ -90,7 +92,7 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     # Enhanced callbacks
     callbacks = [
         ModelCheckpoint(
-            checkpoint_path, 
+            filepath=checkpoint_path, 
             save_best_only=True, 
             monitor='val_loss'
         ),
@@ -122,6 +124,7 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
         logger.info(f"Using class weights: {class_weight_dict}")
     
     # Recompile model with appropriate loss function
+    loss_function_to_use = 'binary_crossentropy'
     if use_focal_loss:
         logger.info("Using focal loss for imbalanced classification")
         model.compile(
@@ -137,33 +140,56 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
             metrics=['accuracy']
         )
     
-    logger.info(f"Training enhanced model: {model_name}")
+    logger.info(f"Starting training for model: {model_name} with loss: {str(loss_function_to_use)}")
     
-    # Handle multimodal model training (multiple inputs)
+    y_train_fit = np.asarray(y_train).reshape(-1, 1)
+    y_val_fit = np.asarray(y_val).reshape(-1, 1)
+
+    # Determine if X_train is a list (for multimodal) or a single array
     if isinstance(X_train, list):
+        logger.info(f"Training multimodal model {model_name} with {len(X_train)} inputs.")
+        # Ensure X_val is also a list of the same length
+        if not isinstance(X_val, list) or len(X_val) != len(X_train):
+            logger.error("X_val structure mismatch for multimodal input.")
+            # Handle error appropriately, e.g., by raising an exception or returning
+            raise ValueError("X_val structure mismatch for multimodal input.")
         history = model.fit(
-            X_train, y_train, 
+            X_train, y_train_fit, 
             epochs=epochs, 
             batch_size=batch_size,
-            validation_data=(X_val, y_val),
+            validation_data=(X_val, y_val_fit),
             callbacks=callbacks,
             class_weight=class_weight_dict,
             verbose=1
         )
     else:
+        logger.info(f"Training single-input model {model_name}.")
         history = model.fit(
-            X_train, y_train, 
+            X_train, y_train_fit, 
             epochs=epochs, 
             batch_size=batch_size,
-            validation_data=(X_val, y_val),
+            validation_data=(X_val, y_val_fit),
             callbacks=callbacks,
             class_weight=class_weight_dict,
             verbose=1
         )
     
-    # Save training history
     history_df = pd.DataFrame(history.history)
     history_df.to_csv(history_path)
+
+    # Manually calculate metrics with a custom threshold for validation
+    y_pred_val_raw = model.predict(X_val)
+    custom_threshold = 0.40 # Optimal threshold found from analysis
+    y_pred_val_thresholded = (y_pred_val_raw >= custom_threshold).astype(int)
+
+    val_precision_custom = precision_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+    val_recall_custom = recall_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+    val_f1_custom = f1_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
+
+    # Update history with custom threshold metrics for reporting
+    history.history['val_precision_custom'] = [val_precision_custom] * len(history.history['val_loss'])
+    history.history['val_recall_custom'] = [val_recall_custom] * len(history.history['val_loss'])
+    history.history['val_f1_custom'] = [val_f1_custom] * len(history.history['val_loss'])
     
     # Save learning curves
     visualize_enhanced_learning_curves(
@@ -172,8 +198,7 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
         output_dir=output_dir
     )
     
-    logger.info(f"Enhanced model training completed. Best model saved to: {checkpoint_path}")
-    
+    logger.info(f"Enhanced model training completed for {model_name}. Best model saved to: {checkpoint_path}")
     return model, history
 
 
@@ -254,5 +279,3 @@ def visualize_enhanced_learning_curves(history, metrics=None, title=None, filena
         plt.close()
     else:
         plt.show()
-
-

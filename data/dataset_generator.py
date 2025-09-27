@@ -19,6 +19,7 @@ from detection.transit_detector import apply_transit_modeling, estimate_planet_p
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import torch # Added for LightCurveContrastiveDataset
 
 logger = logging.getLogger(__name__)
 
@@ -174,3 +175,96 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     logger.info(f"Multimodal dataset created successfully with {len(y)} samples (before augmentation).")
     print(f"DEBUG: all_pipeline_results_raw is defined: {'all_pipeline_results_raw' in locals()}") # Add this line
     return X_ts, X_img, X_features, y, all_pipeline_results_raw
+
+def create_contrastive_dataset(file_paths, output_dir, FIXED_LENGTH=config.FIXED_LENGTH, augmentation_factor=config.AUGMENTATION_FACTOR):
+    """
+    Creates a dataset specifically for contrastive pre-training.
+    It processes light curve files, normalizes them, segments them to a fixed length,
+    and applies augmentation to create two augmented versions (X_aug1, X_aug2).
+    These augmented versions are saved as .npy files in the output_dir.
+    """
+    logger.info(f"Starting contrastive dataset creation with {len(file_paths)} files.")
+
+    all_segments = []
+    
+    # Process files to get raw time-series segments
+    for file_path in tqdm(file_paths, desc="Processing files for contrastive dataset"):
+        try:
+            with fits.open(file_path, mode='readonly') as hdul:
+                data = hdul[1].data
+                time_lc = data.field('TIME')
+                flux_lc = data.field('PDCSAP_FLUX')
+
+                finite_mask = np.isfinite(flux_lc) & np.isfinite(time_lc)
+                time_lc = time_lc[finite_mask]
+                flux_lc = flux_lc[finite_mask]
+
+                if len(flux_lc) < 100:
+                    logger.warning(f"Skipping {os.path.basename(file_path)}: Not enough finite data points for contrastive dataset.")
+                    continue
+
+                flux_norm = (flux_lc - np.median(flux_lc)) / np.std(flux_lc)
+                start = max(0, len(flux_norm) // 2 - FIXED_LENGTH // 2)
+                segment = flux_norm[start : start + FIXED_LENGTH]
+                if len(segment) < FIXED_LENGTH:
+                    segment = np.pad(segment, (0, FIXED_LENGTH - len(segment)), 'constant', constant_values=0)
+                
+                all_segments.append(segment)
+
+        except Exception as e:
+            logger.error(f"FAILED to process {os.path.basename(file_path)} for contrastive dataset. Error: {e}. Skipping.", exc_info=True)
+            continue
+
+    if not all_segments:
+        logger.error("CRITICAL: No segments were successfully processed for contrastive dataset.")
+        return
+
+    X_raw = np.array(all_segments)
+    logger.info(f"Raw segments for contrastive dataset: {X_raw.shape}")
+
+    # Apply augmentation twice to create two augmented views
+    # The augment_data function expects a list of arrays for X, and y. Here y is dummy.
+    # We need to adapt it for single time-series augmentation.
+    # Let's create a simplified augmentation for contrastive learning if augment_data is too complex.
+    
+    # For simplicity, let's use a basic augmentation strategy for contrastive learning:
+    # 1. Random noise
+    # 2. Random scaling
+    
+    X_aug1 = []
+    X_aug2 = []
+
+    for segment in tqdm(X_raw, desc="Augmenting data for contrastive dataset"):
+        # Augmentation 1: Add random noise
+        noise1 = np.random.normal(0, 0.01, segment.shape)
+        aug_segment1 = segment + noise1
+        X_aug1.append(aug_segment1)
+
+        # Augmentation 2: Random scaling
+        scale_factor = np.random.uniform(0.9, 1.1)
+        aug_segment2 = segment * scale_factor
+        X_aug2.append(aug_segment2)
+
+    X_aug1 = np.array(X_aug1)
+    X_aug2 = np.array(X_aug2)
+
+    np.save(os.path.join(output_dir, 'X_aug1.npy'), X_aug1)
+    np.save(os.path.join(output_dir, 'X_aug2.npy'), X_aug2)
+    logger.info(f"Contrastive dataset created and saved to {output_dir}.")
+
+
+class LightCurveContrastiveDataset(torch.utils.data.Dataset):
+    """
+    Dataset for CACL pre-training, loading two augmented views of light curves.
+    """
+    def __init__(self, data_dir):
+        self.X_aug1 = np.load(os.path.join(data_dir, 'X_aug1.npy'))
+        self.X_aug2 = np.load(os.path.join(data_dir, 'X_aug2.npy'))
+        assert len(self.X_aug1) == len(self.X_aug2)
+
+    def __len__(self):
+        return len(self.X_aug1)
+
+    def __getitem__(self, idx):
+        return torch.tensor(self.X_aug1[idx], dtype=torch.float32), \
+               torch.tensor(self.X_aug2[idx], dtype=torch.float32)

@@ -58,3 +58,19 @@ USE_CACHE = True
 AUGMENTATION_FACTOR = 1 # Reduced for potential speedup
 
 MIN_SNR = 3
+
+# --- CACL Explainable AI (XAI) Parameters ---
+CACL_MODEL_PATH = BASE_DIR / "models" / "cacl_transformer_feature_extractor.pt"
+CACL_K_PARTITIONS = 4 # Number of feature partitions for CACL
+CACL_K_CONTEXT = 5    # Number of context neighbors for CACL
+CACL_DATA_TYPE = "temporal" # For build_context_groups (e.g., "temporal", "tabular", "spatial")
+CACL_OUTPUT_DIM = 64  # Output dimension of CACL encoder
+CACL_PROJ_DIM = 32    # Projection dimension of CACL model
+CACL_NHEAD = 2        # Number of attention heads for CACL Transformer
+CACL_NUM_LAYERS = 1
+CACL_DROPOUT = 0.1 # Dropout rate for CACL transformer
+
+# Bayesian Model Parameters
+CACL_ETA = 0.2        # Threshold for semantic agreement in CACL explanation
+CACL_CONTEXT_THRESHOLD_QUANTILE = 0.1 # Quantile threshold for context similarity in CACL explanation
+

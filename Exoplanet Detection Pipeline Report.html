@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!-- saved from url=(0096)file:///Users/emmanuel/proj/phd/results/run_20250926-080437/pipeline_report_20250926-080437.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Exoplanet Detection Pipeline Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 1200px; margin: auto; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .metric-card { background-color: #f9f9f9; border-radius: 5px; padding: 15px; margin: 10px; display: inline-block; width: 200px; text-align: center; }
+            .metric-value { font-size: 24px; font-weight: bold; margin: 10px 0; }
+            .metric-label { font-size: 14px; color: #666; }
+            .gallery { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+            .gallery-item { flex: 0 0 300px; }
+            .gallery-item img { max-width: 100%; border: 1px solid #ddd; }
+        </style>
+    </head>
+    <body>
+        <h1>Exoplanet Detection Pipeline Report</h1>
+        <p>Generated: 2025-09-26 08:04:48</p>
+        <h2>Summary</h2>
+        <div style="display: flex; flex-wrap: wrap;">
+            <div class="metric-card">
+                <div class="metric-label">Light Curves Processed</div>
+                <div class="metric-value">10</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">True Positives</div>
+                <div class="metric-value">3</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">False Positives</div>
+                <div class="metric-value">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">True Negatives</div>
+                <div class="metric-value">4</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">False Negatives</div>
+                <div class="metric-value">3</div>
+            </div>
+        </div>
+    
+        <h2>AI Model Performance</h2>
+        <h3>Multimodal Fusion Model Metrics</h3>
+        <div style="display: flex; flex-wrap: wrap;">
+        
+            <div class="metric-card">
+                <div class="metric-label">Accuracy</div>
+                <div class="metric-value">0.8500</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Loss</div>
+                <div class="metric-value">0.1119</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Pr Auc</div>
+                <div class="metric-value">0.9349</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Precision</div>
+                <div class="metric-value">0.9500</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Recall</div>
+                <div class="metric-value">0.7917</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Roc Auc</div>
+                <div class="metric-value">0.9193</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Accuracy</div>
+                <div class="metric-value">0.7000</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Loss</div>
+                <div class="metric-value">0.1205</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Pr Auc</div>
+                <div class="metric-value">0.8433</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Precision</div>
+                <div class="metric-value">1.0000</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Recall</div>
+                <div class="metric-value">0.5000</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Roc Auc</div>
+                <div class="metric-value">0.7500</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Learning Rate</div>
+                <div class="metric-value">0.0100</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Precision Custom</div>
+                <div class="metric-value">0.7500</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val Recall Custom</div>
+                <div class="metric-value">0.5000</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Val F1 Custom</div>
+                <div class="metric-value">0.6000</div>
+            </div>
+                
+        </div>
+        
+        <h2>Learning Curves</h2>
+        <div class="gallery">
+            <div class="gallery-item"><img src="./Exoplanet Detection Pipeline Report_files/exo_multimodal_model_learning_curves.png" alt="Learning Curves"></div>
+        </div>
+            
+        <h2>Detected Transits</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Classification</th>
+                    <th>Period (days)</th>
+                    <th>Planet Radius (Earth)</th>
+                    <th>Semi-major Axis (AU)</th>
+                    <th>Equilibrium Temp (K)</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+                <tr>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>2.40</td>
+                    <td>5.79</td>
+                    <td>0.476</td>
+                    <td>943</td>
+                </tr>
+        
+                <tr>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>4.25</td>
+                    <td>7.18</td>
+                    <td>0.159</td>
+                    <td>395</td>
+                </tr>
+        
+                <tr>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>15.12</td>
+                    <td>1.01</td>
+                    <td>0.651</td>
+                    <td>1353</td>
+                </tr>
+        
+                <tr>
+                    <td>tess2021204101404-s0041-0000000172422394-0212-s_lc.fits</td>
+                    <td>True Negative</td>
+                    <td>2.40</td>
+                    <td>3123.54</td>
+                    <td>0.035</td>
+                    <td>1488</td>
+                </tr>
+        
+                <tr>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>20.72</td>
+                    <td>6.91</td>
+                    <td>0.807</td>
+                    <td>948</td>
+                </tr>
+        
+                <tr>
+                    <td>tess2024249191853-s0083-0000000027187450-0280-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>9.79</td>
+                    <td>142.38</td>
+                    <td>0.09</td>
+                    <td>931</td>
+                </tr>
+        
+                <tr>
+                    <td>tess2024003055635-s0074-0000000048503881-0269-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>10.02</td>
+                    <td>181.97</td>
+                    <td>0.091</td>
+                    <td>924</td>
+                </tr>
+        
+                <tr>
+                    <td>tess2024003055635-s0074-0000000164836049-0269-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>7.00</td>
+                    <td>150.19</td>
+                    <td>0.072</td>
+                    <td>1041</td>
+                </tr>
+        
+                <tr>
+                    <td>tess2024170053053-s0080-0000000120899739-0275-s_lc.fits</td>
+                    <td>True Negative</td>
+                    <td>6.84</td>
+                    <td>169.86</td>
+                    <td>0.071</td>
+                    <td>1049</td>
+                </tr>
+        
+                <tr>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>64.15</td>
+                    <td>8.92</td>
+                    <td>0.245</td>
+                    <td>952</td>
+                </tr>
+        
+            </tbody>
+        </table>
+    
+    
+    </body></html>
