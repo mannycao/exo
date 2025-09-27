@@ -84,6 +84,10 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
     logger.info(f"Augmented data saving completed in {save_time:.2f} seconds.")
 
 
+    # Add original index to each result for later reference
+    for i, res in enumerate(all_pipeline_results_aug):
+        res['original_index'] = i
+
     # Split data into training and validation sets, including all_pipeline_results
     X_ts_train, X_ts_val, \
     X_img_train, X_img_val, \
@@ -142,18 +146,61 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
             batch_size=config.BATCH_SIZE
         )
 
-        # After training, get CACL explanations
+                    # After training, get CACL explanations
         cacl_explanations = {}
+        cacl_stats = {}
+
+        # Convert probabilities to binary predictions for validation set
+        y_pred_binary = np.round(y_pred_val_raw).astype(int)
+
+        # Add classification to each result in all_pipeline_results_val
+        for i, result in enumerate(all_pipeline_results_val):
+            true_label = y_val_actual[i]
+            predicted_label = y_pred_binary[i]
+
+            if true_label == 1 and predicted_label == 1:
+                result['classification'] = 'True Positive'
+            elif true_label == 0 and predicted_label == 1:
+                result['classification'] = 'False Positive'
+            elif true_label == 0 and predicted_label == 0:
+                result['classification'] = 'True Negative'
+            elif true_label == 1 and predicted_label == 0:
+                result['classification'] = 'False Negative'
+            else:
+                result['classification'] = 'Unknown' # Should not happen with binary classification
+
         if trainer.use_cacl:
             logger.info("Generating CACL explanations...")
             logger.debug(f"Validation Dataset Length: {len(validation_dataset[0])}")
             logger.debug(f"X_ts_val shape: {validation_dataset[0].shape}")
-            cacl_explanations = trainer.get_cacl_explanations(validation_dataset, cacl_partitions)
+            
+            # Get original indices of validation samples
+            validation_original_indices = [res['original_index'] for res in all_pipeline_results_val]
+            validation_classifications = [res['classification'] for res in all_pipeline_results_val]
+            print(f"DEBUG: validation_original_indices: {validation_original_indices}")
+            print(f"DEBUG: validation_classifications: {validation_classifications}")
+
+            cacl_explanations = trainer.get_cacl_explanations(validation_dataset, cacl_partitions, validation_original_indices, validation_classifications)
             logger.info("CACL explanations generated.")
+            print(f"DEBUG: cacl_explanations keys: {cacl_explanations.keys()}")
+
+            # Calculate mean and range for Max Disagreement and Context Similarity
+            all_max_disagreements = [exp['max_disagreement'] for exp in cacl_explanations.values() if 'max_disagreement' in exp]
+            all_context_similarities = [exp['context_similarity'] for exp in cacl_explanations.values() if 'context_similarity' in exp]
+
+            cacl_stats = {
+                'max_disagreement_mean': np.mean(all_max_disagreements) if all_max_disagreements else 'N/A',
+                'max_disagreement_min': np.min(all_max_disagreements) if all_max_disagreements else 'N/A',
+                'max_disagreement_max': np.max(all_max_disagreements) if all_max_disagreements else 'N/A',
+                'context_similarity_mean': np.mean(all_context_similarities) if all_context_similarities else 'N/A',
+                'context_similarity_min': np.min(all_context_similarities) if all_context_similarities else 'N/A',
+                'context_similarity_max': np.max(all_context_similarities) if all_context_similarities else 'N/A',
+            }
 
         model_report_data = {
             'cnn_metrics': cnn_metrics,
-            'cacl_explanations': cacl_explanations
+            'cacl_explanations': cacl_explanations,
+            'cacl_stats': cacl_stats
         }
 
         generate_report(
@@ -162,7 +209,9 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
             y_true=y_val_actual,
             y_pred=y_pred_val_raw,
             timestamp=timestamp,
-            output_dir=result_dir
+            output_dir=result_dir,
+            validation_original_indices=validation_original_indices,
+            validation_classifications=validation_classifications
         )
 
         logger.info("Enhanced multimodal pipeline finished successfully.")

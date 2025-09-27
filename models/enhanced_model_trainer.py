@@ -63,15 +63,24 @@ class EnhancedModelTrainer(ModelTrainer):
             output_dir=self.output_dir
         )
         self.model = trained_model # Update the model with the trained one
-        return history, y_val, self.model.predict(X_val_inputs), history.history # Return history.history as cnn_metrics
+        final_metrics = {key: value[-1] for key, value in history.history.items()}
+        return history, y_val, self.model.predict(X_val_inputs), final_metrics # Return final_metrics as cnn_metrics
 
-    def get_cacl_explanations(self, validation_dataset, cacl_partitions=None):
+    def get_cacl_explanations(self, validation_dataset, cacl_partitions=None, validation_original_indices=None, validation_classifications=None):
         if not self.use_cacl or self.cacl_explainer is None:
             logger.warning("CACL is not enabled or explainer not initialized.")
             return {}
 
         if cacl_partitions is None:
             logger.error("CACL partitions must be provided to get explanations.")
+            return {}
+
+        if validation_original_indices is None:
+            logger.error("validation_original_indices must be provided to get explanations.")
+            return {}
+
+        if validation_classifications is None:
+            logger.error("validation_classifications must be provided to get explanations.")
             return {}
 
         # Update partitions in the explainer
@@ -83,7 +92,8 @@ class EnhancedModelTrainer(ModelTrainer):
         # For demonstration, explain a few samples from the validation set
         # In a real scenario, you might select specific samples (e.g., misclassified ones)
         num_samples_to_explain = min(5, len(X_ts_val))
-        sample_indices = np.random.choice(len(X_ts_val), num_samples_to_explain, replace=False)
+        # Use the provided original indices for explanation
+        sample_indices_in_val_dataset = np.random.choice(len(X_ts_val), num_samples_to_explain, replace=False)
 
         # Pre-compute context embeddings and dependency matrix if not already done
         if self.cacl_dependency_matrix is None or self.cacl_context_avg_embeddings is None:
@@ -133,14 +143,16 @@ class EnhancedModelTrainer(ModelTrainer):
 
             logger.info("CACL context embeddings and dependency matrix pre-computed.")
 
-        for i in sample_indices:
-            logger.info(f"Explaining validation sample {i}...")
-            data_sample = X_ts_val[i]
+        for i_val in sample_indices_in_val_dataset:
+            original_index = validation_original_indices[i_val]
+            classification = validation_classifications[i_val]
+            logger.info(f"Explaining validation sample {original_index} (index in val dataset: {i_val})...")
+            data_sample = X_ts_val[i_val]
             
             # Build context indices for the current sample
             # This requires the full dataset X_ts_val and potentially X_ts_train
             # For simplicity, we'll use a dummy context for now
-            context_indices = [j for j in range(len(X_ts_val)) if j != i] # Dummy context
+            context_indices = [j for j in range(len(X_ts_val)) if j != i_val] # Dummy context
 
             explanation = explain_with_cacl(
                 data_sample=data_sample,
@@ -152,8 +164,9 @@ class EnhancedModelTrainer(ModelTrainer):
                 context_threshold_quantile=config.CACL_CONTEXT_THRESHOLD_QUANTILE,
                 ref_ctx_sim_distribution=self.cacl_ref_ctx_sim_distribution
             )
-            explanations[i] = explanation
-            logger.info(f"Explanation for sample {i}: {explanation}")
+            explanation['classification'] = classification
+            explanations[original_index] = explanation
+            logger.info(f"Explanation for sample {original_index}: {explanation}")
 
         logger.info("CACL explanations generated.")
         logger.debug(f"CACL Explanations before return: {explanations}")
