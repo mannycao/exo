@@ -186,10 +186,21 @@ def train_enhanced_model(model, X_train, y_train, X_val, y_val, model_name,
     val_recall_custom = recall_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
     val_f1_custom = f1_score(y_val_fit, y_pred_val_thresholded, zero_division=0)
 
+    # Manually calculate metrics with a custom threshold for training
+    y_pred_train_raw = model.predict(X_train)
+    y_pred_train_thresholded = (y_pred_train_raw >= custom_threshold).astype(int)
+
+    train_precision_custom = precision_score(y_train_fit, y_pred_train_thresholded, zero_division=0)
+    train_recall_custom = recall_score(y_train_fit, y_pred_train_thresholded, zero_division=0)
+    train_f1_custom = f1_score(y_train_fit, y_pred_train_thresholded, zero_division=0)
+
     # Update history with custom threshold metrics for reporting
     history.history['val_precision_custom'] = [val_precision_custom] * len(history.history['val_loss'])
     history.history['val_recall_custom'] = [val_recall_custom] * len(history.history['val_loss'])
     history.history['val_f1_custom'] = [val_f1_custom] * len(history.history['val_loss'])
+    history.history['train_precision_custom'] = [train_precision_custom] * len(history.history['val_loss'])
+    history.history['train_recall_custom'] = [train_recall_custom] * len(history.history['val_loss'])
+    history.history['train_f1_custom'] = [train_f1_custom] * len(history.history['val_loss'])
     
     # Save learning curves
     visualize_enhanced_learning_curves(

@@ -89,11 +89,8 @@ class EnhancedModelTrainer(ModelTrainer):
         X_ts_val, _, _, y_val = validation_dataset
         explanations = {}
 
-        # For demonstration, explain a few samples from the validation set
-        # In a real scenario, you might select specific samples (e.g., misclassified ones)
-        num_samples_to_explain = min(5, len(X_ts_val))
-        # Use the provided original indices for explanation
-        sample_indices_in_val_dataset = np.random.choice(len(X_ts_val), num_samples_to_explain, replace=False)
+        # Explain all samples in the validation set
+        sample_indices_in_val_dataset = range(len(X_ts_val))
 
         # Pre-compute context embeddings and dependency matrix if not already done
         if self.cacl_dependency_matrix is None or self.cacl_context_avg_embeddings is None:
@@ -105,7 +102,7 @@ class EnhancedModelTrainer(ModelTrainer):
             
             # Dummy X_inliers for compute_dependency_matrix and compute_context_embeddings
             # In a real scenario, X_inliers would be a representative set of 'normal' data
-            X_inliers = X_ts_val[:min(50, len(X_ts_val))] # Use a subset of validation data as inliers
+            X_inliers = X_ts_val # Use the full validation set
             if len(X_inliers) == 0:
                 logger.warning("No inlier data available for CACL context computation.")
                 return {}

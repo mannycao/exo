@@ -42,7 +42,7 @@ FILE_TYPE_FALSE_POSITIVE = 'false_positive'
 
 # --- OPTIMIZATION 2: Model Training Hyperparameters (Updated with your results) ---
 EPOCHS = 25                # From your optimization results
-BATCH_SIZE = 64           # Increased for potential speedup
+BATCH_SIZE = 32           # Increased for potential speedup
 EARLY_STOPPING_PATIENCE = 5 # Kept as a sensible default
 
 LEARNING_RATE = 0.01      # From your optimization results
