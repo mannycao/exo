@@ -84,6 +84,46 @@ def create_disagreement_similarity_plot(cacl_explanations, output_dir):
     plt.close()
     return plot_filename
 
+from scipy.stats import pearsonr
+
+def create_confidence_correlation_plot(cacl_explanations, y_true, validation_original_indices, output_dir):
+    """
+    Creates a scatter plot of CACL confidence scores vs. true labels,
+    with a regression line and correlation coefficient.
+    """
+    index_to_label = {idx: label for idx, label in zip(validation_original_indices, y_true)}
+    
+    confidence_scores = []
+    true_labels = []
+    for record_id, explanation in cacl_explanations.items():
+        confidence_scores.append(explanation['confidence_score'])
+        true_labels.append(index_to_label.get(record_id, -1))
+
+    df = pd.DataFrame({
+        'Confidence Score': confidence_scores,
+        'True Label': true_labels
+    })
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df['Confidence Score'], df['True Label'], alpha=0.5)
+    plt.xlabel('CACL Confidence Score')
+    plt.ylabel('True Label (1: Planet, 0: False Positive)')
+    plt.title('CACL Confidence Score vs. True Label')
+
+    # Add regression line
+    m, b = np.polyfit(df['Confidence Score'], df['True Label'], 1)
+    plt.plot(df['Confidence Score'], m*df['Confidence Score'] + b, color='red')
+
+    # Calculate and display correlation
+    corr, p_value = pearsonr(df['Confidence Score'], df['True Label'])
+    plt.text(0.05, 0.9, f'Pearson Correlation: {corr:.4f}\np-value: {p_value:.4f}', transform=plt.gca().transAxes)
+
+    plt.grid(True)
+    plot_filename = 'confidence_correlation_plot.png'
+    plt.savefig(os.path.join(output_dir, plot_filename))
+    plt.close()
+    return plot_filename, corr, p_value
+
 def generate_report(results, model_results, y_true, y_pred, timestamp, output_dir, validation_original_indices, validation_classifications):
     """
     Generates an HTML report and a JSON summary of the pipeline results,
@@ -157,6 +197,7 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
     disagreement_similarity_plot_filename = None
     if cacl_explanations:
         disagreement_similarity_plot_filename = create_disagreement_similarity_plot(cacl_explanations, output_dir)
+        confidence_correlation_plot_filename, corr, p_value = create_confidence_correlation_plot(cacl_explanations, y_true, validation_original_indices, output_dir)
 
     # Generate HTML report
     html_content = f"""
@@ -248,12 +289,19 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
                 <p><strong>Violated Dependencies:</strong> This indicates a breakdown in the expected relationships between different parts of the light curve. Think of it as a 'rule' being broken, which is a strong indicator of an anomaly.</p>
                 <p><strong>Context Similarity:</strong> How 'normal' this light curve looks compared to its neighbors. A low score means it's an outlier.</p>
                 <p><strong>Context Flag:</strong> If this is 'True', the light curve is considered an outlier compared to its neighbors.</p>
+                <p><strong>CACL Confidence Score:</strong> A score from 0 to 1, where a higher score indicates a higher confidence that the sample is a true exoplanet. It is a combination of Max Disagreement, Context Similarity, and Violated Dependencies.</p>
             </div>
             """
             if disagreement_similarity_plot_filename:
                 html_content += f"""
                 <h2>Max Disagreement vs. Context Similarity Plot</h2>
                 <img src='{disagreement_similarity_plot_filename}' alt='Max Disagreement vs. Context Similarity Plot'>
+                """
+            if confidence_correlation_plot_filename:
+                html_content += f"""
+                <h2>CACL Confidence Score vs. True Label</h2>
+                <img src='{confidence_correlation_plot_filename}' alt='CACL Confidence Score vs. True Label'>
+                <p>Pearson Correlation: {corr:.4f}, p-value: {p_value:.4f}</p>
                 """
 
             for record_id, explanation_data in cacl_explanations.items():
@@ -267,6 +315,7 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
                 <div class='cacl-explanation'>
                     <div class='cacl-text'>
                         <h3>Record ID: {record_id} (File: {original_filename})</h3>
+                        <p><strong>CACL Confidence Score:</strong> {explanation_data.get('confidence_score', 'N/A'):.4f}</p>
                         <p><strong>Max Disagreement:</strong> {explanation_data.get('max_disagreement', 'N/A'):.4f}</p>
                         <p><strong>Most Conflicting Partitions:</strong> {explanation_data.get('most_conflicting_partitions', 'N/A')}</p>
                         <p><strong>Violated Dependencies:</strong> {explanation_data.get('violated_dependencies', 'N/A')}</p>
@@ -301,6 +350,7 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
                     <th>ID</th>
                     <th>File</th>
                     <th>Classification</th>
+                    <th>CACL Confidence</th>
                     <th>Period (days)</th>
                     <th>Planet Radius (Earth)</th>
                     <th>Semi-major Axis (AU)</th>
@@ -315,6 +365,8 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
         classification = result.get('classification', 'N/A')
         periodicity = result.get('periodicity', 'N/A')
         planet_properties = result.get('planet_properties', {})
+        original_index = result.get('original_index', -1)
+        confidence_score = cacl_explanations.get(original_index, {}).get('confidence_score', 'N/A')
         
         radius_earth_val = planet_properties.get('radius_earth', 'N/A')
         radius_earth = round(radius_earth_val, 2) if isinstance(radius_earth_val, (int, float)) else radius_earth_val
@@ -333,6 +385,7 @@ def generate_report(results, model_results, y_true, y_pred, timestamp, output_di
                     <td>{result.get('original_index', i)}</td>
                     <td>{file_path.split('/')[-1]}</td>
                     <td>{classification}</td>
+                    <td>{confidence_score:.4f}</td>
                     <td>{periodicity:.2f}</td>
                     <td>{radius_earth}</td>
                     <td>{semi_major_axis_au}</td>

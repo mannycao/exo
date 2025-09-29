@@ -9,6 +9,7 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 import config # Import config
+from sklearn.linear_model import LogisticRegression
 
 # Import necessary functions from cacl_utils.py
 from cacl_utils import (
@@ -125,3 +126,83 @@ def explain_with_cacl(
         ref_ctx_sim_distribution=ref_ctx_sim_distribution,
     )
     return explanation
+
+from sklearn.ensemble import RandomForestClassifier
+
+def train_confidence_model(explanations, y_true, validation_original_indices):
+    """
+    Trains a Random Forest Classifier model to predict the probability of being an exoplanet
+    based on the CACL explanation scores.
+    """
+    index_to_label = {idx: label for idx, label in zip(validation_original_indices, y_true)}
+
+    features = []
+    labels = []
+    for record_id, explanation in explanations.items():
+        # Extract existing features
+        max_disagreement = explanation.get('max_disagreement', 0)
+        context_similarity = explanation.get('context_similarity', 0)
+        num_violated_dependencies = len(explanation.get('violated_dependencies', []))
+        disagreement_matrix = explanation.get('disagreement_matrix', np.array([[0,0],[0,0]]))
+
+        # New features
+        mean_disagreement = np.mean(disagreement_matrix[np.triu_indices(disagreement_matrix.shape[0], k=1)]) if disagreement_matrix.size > 1 else 0
+        std_disagreement = np.std(disagreement_matrix[np.triu_indices(disagreement_matrix.shape[0], k=1)]) if disagreement_matrix.size > 1 else 0
+        
+        most_conflicting_partitions = explanation.get('most_conflicting_partitions', (0,0))
+        most_conflicting_partitions_diff = abs(most_conflicting_partitions[0] - most_conflicting_partitions[1])
+
+        context_flag = 1 if explanation.get('context_flag', False) else 0
+
+        features.append([
+            max_disagreement,
+            context_similarity,
+            num_violated_dependencies,
+            mean_disagreement,
+            std_disagreement,
+            most_conflicting_partitions_diff,
+            context_flag
+        ])
+        labels.append(index_to_label.get(record_id, 0))
+
+    X = np.array(features)
+    y = np.array(labels)
+
+    model = RandomForestClassifier(random_state=42) # Use RandomForestClassifier
+    model.fit(X, y)
+
+    return model
+
+def compute_confidence_score(explanation, model):
+    """
+    Computes a confidence score based on the CACL explanation using a trained model.
+    """
+    # Extract existing features
+    max_disagreement = explanation.get('max_disagreement', 0)
+    context_similarity = explanation.get('context_similarity', 0)
+    num_violated_dependencies = len(explanation.get('violated_dependencies', []))
+    disagreement_matrix = explanation.get('disagreement_matrix', np.array([[0,0],[0,0]]))
+
+    # New features
+    mean_disagreement = np.mean(disagreement_matrix[np.triu_indices(disagreement_matrix.shape[0], k=1)]) if disagreement_matrix.size > 1 else 0
+    std_disagreement = np.std(disagreement_matrix[np.triu_indices(disagreement_matrix.shape[0], k=1)]) if disagreement_matrix.size > 1 else 0
+    
+    most_conflicting_partitions = explanation.get('most_conflicting_partitions', (0,0))
+    most_conflicting_partitions_diff = abs(most_conflicting_partitions[0] - most_conflicting_partitions[1])
+
+    context_flag = 1 if explanation.get('context_flag', False) else 0
+
+    features = np.array([
+        max_disagreement,
+        context_similarity,
+        num_violated_dependencies,
+        mean_disagreement,
+        std_disagreement,
+        most_conflicting_partitions_diff,
+        context_flag
+    ]).reshape(1, -1)
+
+    confidence_score = model.predict_proba(features)[:, 1][0] # RandomForestClassifier returns probabilities for all classes
+
+    return confidence_score
+

@@ -18,7 +18,7 @@ from models.model_trainer_utils import train_enhanced_model
 from pipeline.report_generator import generate_report
 
 # CACL XAI Imports
-from xai_cacl_explainer import CACLFeatureExtractor, explain_with_cacl
+from xai_cacl_explainer import CACLFeatureExtractor, explain_with_cacl, compute_confidence_score, train_confidence_model
 from cacl_utils import create_feature_partitions, build_context_groups, compute_dependency_matrix, compute_context_embeddings
 import torch # Required for CACLFeatureExtractor
 
@@ -146,7 +146,7 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
             batch_size=config.BATCH_SIZE
         )
 
-                    # After training, get CACL explanations
+        # After training, get CACL explanations
         cacl_explanations = {}
         cacl_stats = {}
 
@@ -187,14 +187,25 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
             # Calculate mean and range for Max Disagreement and Context Similarity
             all_max_disagreements = [exp['max_disagreement'] for exp in cacl_explanations.values() if 'max_disagreement' in exp]
             all_context_similarities = [exp['context_similarity'] for exp in cacl_explanations.values() if 'context_similarity' in exp]
+            all_violated_dependencies = [len(exp['violated_dependencies']) for exp in cacl_explanations.values() if 'violated_dependencies' in exp]
+
+            confidence_model = train_confidence_model(cacl_explanations, y_val_actual, validation_original_indices)
+
+            # Compute and add confidence score to each explanation
+            for record_id, explanation in cacl_explanations.items():
+                confidence_score = compute_confidence_score(
+                    explanation,
+                    confidence_model
+                )
+                explanation['confidence_score'] = confidence_score
 
             cacl_stats = {
                 'max_disagreement_mean': np.mean(all_max_disagreements) if all_max_disagreements else 'N/A',
-                'max_disagreement_min': np.min(all_max_disagreements) if all_max_disagreements else 'N/A',
-                'max_disagreement_max': np.max(all_max_disagreements) if all_max_disagreements else 'N/A',
+                'max_disagreement_min': min(all_max_disagreements) if all_max_disagreements else 'N/A',
+                'max_disagreement_max': max(all_max_disagreements) if all_max_disagreements else 'N/A',
                 'context_similarity_mean': np.mean(all_context_similarities) if all_context_similarities else 'N/A',
-                'context_similarity_min': np.min(all_context_similarities) if all_context_similarities else 'N/A',
-                'context_similarity_max': np.max(all_context_similarities) if all_context_similarities else 'N/A',
+                'context_similarity_min': min(all_context_similarities) if all_context_similarities else 'N/A',
+                'context_similarity_max': max(all_context_similarities) if all_context_similarities else 'N/A',
             }
 
         model_report_data = {

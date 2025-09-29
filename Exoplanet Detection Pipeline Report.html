@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0096)file:///Users/emmanuel/proj/phd/results/run_20250926-080437/pipeline_report_20250926-080437.html -->
+<!-- saved from url=(0096)file:///Users/emmanuel/proj/phd/results/run_20250928-145642/pipeline_report_20250928-145642.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,20 +15,23 @@
             .gallery { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
             .gallery-item { flex: 0 0 300px; }
             .gallery-item img { max-width: 100%; border: 1px solid #ddd; }
+            .cacl-explanation { background-color: #e6f7ff; border-left: 5px solid #3399ff; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; }
+            .cacl-text { flex: 1; }
+            .cacl-chart { flex: 1; }
         </style>
     </head>
     <body>
         <h1>Exoplanet Detection Pipeline Report</h1>
-        <p>Generated: 2025-09-26 08:04:48</p>
+        <p>Generated: 2025-09-28 14:57:07</p>
         <h2>Summary</h2>
         <div style="display: flex; flex-wrap: wrap;">
             <div class="metric-card">
                 <div class="metric-label">Light Curves Processed</div>
-                <div class="metric-value">10</div>
+                <div class="metric-value">50</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">True Positives</div>
-                <div class="metric-value">3</div>
+                <div class="metric-value">6</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">False Positives</div>
@@ -36,11 +39,11 @@
             </div>
             <div class="metric-card">
                 <div class="metric-label">True Negatives</div>
-                <div class="metric-value">4</div>
+                <div class="metric-value">20</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">False Negatives</div>
-                <div class="metric-value">3</div>
+                <div class="metric-value">24</div>
             </div>
         </div>
     
@@ -50,86 +53,851 @@
         
             <div class="metric-card">
                 <div class="metric-label">Accuracy</div>
-                <div class="metric-value">0.8500</div>
+                <div class="metric-value">0.7850</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Loss</div>
-                <div class="metric-value">0.1119</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Pr Auc</div>
-                <div class="metric-value">0.9349</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Precision</div>
-                <div class="metric-value">0.9500</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Recall</div>
-                <div class="metric-value">0.7917</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Roc Auc</div>
-                <div class="metric-value">0.9193</div>
+                <div class="metric-value">0.0818</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Val Accuracy</div>
-                <div class="metric-value">0.7000</div>
+                <div class="metric-value">0.4200</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Val Loss</div>
-                <div class="metric-value">0.1205</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Val Pr Auc</div>
-                <div class="metric-value">0.8433</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Val Precision</div>
-                <div class="metric-value">1.0000</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Val Recall</div>
-                <div class="metric-value">0.5000</div>
-            </div>
-                
-            <div class="metric-card">
-                <div class="metric-label">Val Roc Auc</div>
-                <div class="metric-value">0.7500</div>
+                <div class="metric-value">0.1767</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Learning Rate</div>
-                <div class="metric-value">0.0100</div>
+                <div class="metric-value">0.0010</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Val Precision Custom</div>
-                <div class="metric-value">0.7500</div>
+                <div class="metric-value">0.6842</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Val Recall Custom</div>
-                <div class="metric-value">0.5000</div>
+                <div class="metric-value">0.8667</div>
             </div>
                 
             <div class="metric-card">
                 <div class="metric-label">Val F1 Custom</div>
-                <div class="metric-value">0.6000</div>
+                <div class="metric-value">0.7647</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Train Precision Custom</div>
+                <div class="metric-value">0.7006</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Train Recall Custom</div>
+                <div class="metric-value">0.9167</div>
+            </div>
+                
+            <div class="metric-card">
+                <div class="metric-label">Train F1 Custom</div>
+                <div class="metric-value">0.7942</div>
             </div>
                 
         </div>
         
+            <h2>How to Interpret CACL Explanations</h2>
+            <div class="cacl-explanation">
+                <p><strong>What is a Partition?</strong> For a time series like a light curve, a "partition" is simply a segment of the time series. For example, if we have a light curve with 2048 data points, we can split it into 4 non-overlapping partitions of 512 data points each. Each partition is a "view" of the light curve from a different time window, where P1 represents the first segment of the observation, P2 the second, and so on.</p>
+                <p><strong>Analogy:</strong> Imagine you have a picture of a cat, and you show it to four different people (the "partitions"). If they all agree it's a cat, that's high agreement. If one person says it's a dog, another says it's a car, and so on, that's high disagreement, and something is likely "weird" or anomalous about the picture. CACL does something similar with the light curve data. It splits the data into different "views" (partitions) and checks if the model's interpretation of these views is consistent.</p>
+                <p>The <strong>Record ID</strong> corresponds to the index of the sample in the validation set.</p>
+                <p>The <strong>Spider Chart</strong> visualizes the disagreement matrix. Each axis represents a partition of the light curve, and the lines show the disagreement of each partition with the others. The red dotted line shows the mean disagreement for the sample.</p>
+                <ul>
+                    <li><strong>Good (Normal):</strong> A small, centrally located, and mostly regular shape. This means all parts of the light curve are in agreement. The disagreement values are low and close to the mean.</li>
+                    <li><strong>Bad (Anomaly/Warning):</strong> A large, irregular, and skewed shape. This means some parts of the light curve are "confusing" the model, suggesting a potential anomaly or an unusual signal. The disagreement values are high and far from the mean.</li>
+                </ul>
+                <p><strong>Max Disagreement:</strong> The highest level of confusion between any two parts of the light curve. Higher values are a stronger warning sign.</p>
+                <p><strong>Most Conflicting Partitions:</strong> The two parts of the light curve that are causing the most confusion.</p>
+                <p><strong>Violated Dependencies:</strong> This indicates a breakdown in the expected relationships between different parts of the light curve. Think of it as a 'rule' being broken, which is a strong indicator of an anomaly.</p>
+                <p><strong>Context Similarity:</strong> How 'normal' this light curve looks compared to its neighbors. A low score means it's an outlier.</p>
+                <p><strong>Context Flag:</strong> If this is 'True', the light curve is considered an outlier compared to its neighbors.</p>
+                <p><strong>CACL Confidence Score:</strong> A score from 0 to 1, where a higher score indicates a higher confidence that the sample is a true exoplanet. It is a combination of Max Disagreement, Context Similarity, and Violated Dependencies.</p>
+            </div>
+            
+                <h2>Max Disagreement vs. Context Similarity Plot</h2>
+                <img src="./Exoplanet Detection Pipeline Report_files/disagreement_similarity_plot.png" alt="Max Disagreement vs. Context Similarity Plot">
+                
+                <h2>CACL Confidence Score vs. True Label</h2>
+                <img src="./Exoplanet Detection Pipeline Report_files/confidence_correlation_plot.png" alt="CACL Confidence Score vs. True Label">
+                <p>Pearson Correlation: -0.1872, p-value: 0.2181</p>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 70 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7125</p>
+                        <p><strong>Max Disagreement:</strong> 1.2053</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0323</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_70.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 196 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8361</p>
+                        <p><strong>Max Disagreement:</strong> 1.0259</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0058</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_196.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 71 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5519</p>
+                        <p><strong>Max Disagreement:</strong> 1.3636</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0437</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_71.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 145 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8347</p>
+                        <p><strong>Max Disagreement:</strong> 1.0455</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 1)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0239</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_145.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 108 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8317</p>
+                        <p><strong>Max Disagreement:</strong> 1.2364</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3371</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_108.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 227 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8161</p>
+                        <p><strong>Max Disagreement:</strong> 1.2561</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3371</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_227.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 179 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8154</p>
+                        <p><strong>Max Disagreement:</strong> 1.2563</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3360</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_179.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 73 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8868</p>
+                        <p><strong>Max Disagreement:</strong> 1.0235</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0978</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_73.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 142 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7379</p>
+                        <p><strong>Max Disagreement:</strong> 1.1538</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0000</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_142.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 87 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6540</p>
+                        <p><strong>Max Disagreement:</strong> 1.2599</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (2, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0005</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_87.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 64 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6435</p>
+                        <p><strong>Max Disagreement:</strong> 1.2963</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 1)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0381</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_64.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 124 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8292</p>
+                        <p><strong>Max Disagreement:</strong> 1.1266</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.1482</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_124.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 52 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6938</p>
+                        <p><strong>Max Disagreement:</strong> 1.2175</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0130</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_52.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 241 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5921</p>
+                        <p><strong>Max Disagreement:</strong> 1.3247</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0233</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_241.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 225 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8345</p>
+                        <p><strong>Max Disagreement:</strong> 1.2321</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3360</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_225.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 226 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7609</p>
+                        <p><strong>Max Disagreement:</strong> 1.1837</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0987</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_226.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 165 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8342</p>
+                        <p><strong>Max Disagreement:</strong> 1.2328</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3365</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_165.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 100 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6839</p>
+                        <p><strong>Max Disagreement:</strong> 1.2526</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0507</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_100.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 116 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8132</p>
+                        <p><strong>Max Disagreement:</strong> 1.2602</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3377</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_116.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 131 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8139</p>
+                        <p><strong>Max Disagreement:</strong> 1.2585</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3365</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_131.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 220 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7310</p>
+                        <p><strong>Max Disagreement:</strong> 1.1890</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0441</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_220.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 210 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8353</p>
+                        <p><strong>Max Disagreement:</strong> 1.2314</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3365</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_210.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 208 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8793</p>
+                        <p><strong>Max Disagreement:</strong> 1.0234</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 1)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0815</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_208.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 158 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8113</p>
+                        <p><strong>Max Disagreement:</strong> 1.2617</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3363</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_158.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 141 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8311</p>
+                        <p><strong>Max Disagreement:</strong> 1.2373</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3374</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_141.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 228 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8278</p>
+                        <p><strong>Max Disagreement:</strong> 1.2407</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3363</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_228.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 245 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8161</p>
+                        <p><strong>Max Disagreement:</strong> 1.2560</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3369</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_245.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 202 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.4455</p>
+                        <p><strong>Max Disagreement:</strong> 1.4459</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.1317</p>
+                        <p><strong>Context Flag:</strong> True</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_202.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 105 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8334</p>
+                        <p><strong>Max Disagreement:</strong> 1.2342</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3372</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_105.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 204 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8297</p>
+                        <p><strong>Max Disagreement:</strong> 1.2387</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3368</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_204.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 79 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7394</p>
+                        <p><strong>Max Disagreement:</strong> 1.3404</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3155</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_79.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 181 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6203</p>
+                        <p><strong>Max Disagreement:</strong> 1.3087</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (2, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.0097</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_181.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 213 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8324</p>
+                        <p><strong>Max Disagreement:</strong> 1.2349</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3362</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_213.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 223 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6051</p>
+                        <p><strong>Max Disagreement:</strong> 1.2180</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (2, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.1745</p>
+                        <p><strong>Context Flag:</strong> True</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_223.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 175 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7705</p>
+                        <p><strong>Max Disagreement:</strong> 1.0595</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (2, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0888</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_175.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 172 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5823</p>
+                        <p><strong>Max Disagreement:</strong> 1.3489</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 2)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0036</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_172.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 133 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.7929</p>
+                        <p><strong>Max Disagreement:</strong> 1.1947</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.1851</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_133.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 132 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8323</p>
+                        <p><strong>Max Disagreement:</strong> 1.2352</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3365</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_132.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 174 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8331</p>
+                        <p><strong>Max Disagreement:</strong> 1.2343</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3366</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_174.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 112 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.6831</p>
+                        <p><strong>Max Disagreement:</strong> 1.2170</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.0105</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_112.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 242 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8195</p>
+                        <p><strong>Max Disagreement:</strong> 1.2517</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3369</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_242.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 51 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5221</p>
+                        <p><strong>Max Disagreement:</strong> 1.2066</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.3697</p>
+                        <p><strong>Context Flag:</strong> True</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_51.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 178 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5892</p>
+                        <p><strong>Max Disagreement:</strong> 1.2269</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.1933</p>
+                        <p><strong>Context Flag:</strong> True</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_178.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 198 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.8306</p>
+                        <p><strong>Max Disagreement:</strong> 1.2374</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (1, 3)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> 0.3366</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_198.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
+                <div class="cacl-explanation">
+                    <div class="cacl-text">
+                        <h3>Record ID: 139 (File: Unknown)</h3>
+                        <p><strong>CACL Confidence Score:</strong> 0.5025</p>
+                        <p><strong>Max Disagreement:</strong> 1.3830</p>
+                        <p><strong>Most Conflicting Partitions:</strong> (0, 1)</p>
+                        <p><strong>Violated Dependencies:</strong> []</p>
+                        <p><strong>Context Similarity:</strong> -0.1160</p>
+                        <p><strong>Context Flag:</strong> False</p>
+                        <p><strong>Max Disagreement (Mean):</strong> 1.2281 (Range: 1.0234 - 1.4459)</p>
+                        <p><strong>Context Similarity (Mean):</strong> 0.1417 (Range: -0.3697 - 0.3377)</p>
+                    </div>
+                    <div class="cacl-chart">
+                        <img src="./Exoplanet Detection Pipeline Report_files/cacl_spider_139.png" alt="CACL Disagreement Matrix">
+                    </div>
+                </div>
+                
         <h2>Learning Curves</h2>
         <div class="gallery">
             <div class="gallery-item"><img src="./Exoplanet Detection Pipeline Report_files/exo_multimodal_model_learning_curves.png" alt="Learning Curves"></div>
@@ -139,8 +907,10 @@
         <table>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>File</th>
                     <th>Classification</th>
+                    <th>CACL Confidence</th>
                     <th>Period (days)</th>
                     <th>Planet Radius (Earth)</th>
                     <th>Semi-major Axis (AU)</th>
@@ -150,62 +920,197 @@
             <tbody>
     
                 <tr>
+                    <td>70</td>
+                    <td>kplr010214162-2010174085026_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.7125</td>
+                    <td>17.41</td>
+                    <td>252.57</td>
+                    <td>0.131</td>
+                    <td>769</td>
+                </tr>
+        
+                <tr>
+                    <td>196</td>
+                    <td>tess2024196212429-s0081-0000000120691237-0276-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.8361</td>
+                    <td>13.31</td>
+                    <td>182.82</td>
+                    <td>0.11</td>
+                    <td>840</td>
+                </tr>
+        
+                <tr>
+                    <td>71</td>
+                    <td>kplr011611275-2013131215648_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.5519</td>
+                    <td>9.99</td>
+                    <td>200.9</td>
+                    <td>0.091</td>
+                    <td>925</td>
+                </tr>
+        
+                <tr>
+                    <td>145</td>
+                    <td>tess2022164095748-s0053-0000000267749737-0226-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.8347</td>
+                    <td>10.19</td>
+                    <td>166.78</td>
+                    <td>0.092</td>
+                    <td>919</td>
+                </tr>
+        
+                <tr>
+                    <td>108</td>
                     <td>eclipsing_binary</td>
                     <td>True Negative</td>
-                    <td>2.40</td>
-                    <td>5.79</td>
-                    <td>0.476</td>
-                    <td>943</td>
+                    <td>0.8317</td>
+                    <td>24.61</td>
+                    <td>2.88</td>
+                    <td>0.558</td>
+                    <td>1636</td>
                 </tr>
         
                 <tr>
+                    <td>227</td>
                     <td>synthetic_transit</td>
                     <td>False Negative</td>
-                    <td>4.25</td>
-                    <td>7.18</td>
-                    <td>0.159</td>
-                    <td>395</td>
+                    <td>0.8161</td>
+                    <td>5.70</td>
+                    <td>5.19</td>
+                    <td>0.531</td>
+                    <td>794</td>
                 </tr>
         
                 <tr>
-                    <td>eclipsing_binary</td>
-                    <td>True Negative</td>
-                    <td>15.12</td>
-                    <td>1.01</td>
-                    <td>0.651</td>
-                    <td>1353</td>
-                </tr>
-        
-                <tr>
-                    <td>tess2021204101404-s0041-0000000172422394-0212-s_lc.fits</td>
-                    <td>True Negative</td>
-                    <td>2.40</td>
-                    <td>3123.54</td>
-                    <td>0.035</td>
-                    <td>1488</td>
-                </tr>
-        
-                <tr>
+                    <td>179</td>
                     <td>synthetic_transit</td>
                     <td>False Negative</td>
-                    <td>20.72</td>
-                    <td>6.91</td>
-                    <td>0.807</td>
-                    <td>948</td>
+                    <td>0.8154</td>
+                    <td>35.64</td>
+                    <td>6.29</td>
+                    <td>0.53</td>
+                    <td>414</td>
                 </tr>
         
                 <tr>
-                    <td>tess2024249191853-s0083-0000000027187450-0280-s_lc.fits</td>
+                    <td>73</td>
+                    <td>kplr010910878-2009350155506_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.8868</td>
+                    <td>16.07</td>
+                    <td>579.05</td>
+                    <td>0.125</td>
+                    <td>789</td>
+                </tr>
+        
+                <tr>
+                    <td>142</td>
+                    <td>tess2021204101404-s0041-0000000122785299-0212-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.7379</td>
+                    <td>10.85</td>
+                    <td>157.19</td>
+                    <td>0.096</td>
+                    <td>900</td>
+                </tr>
+        
+                <tr>
+                    <td>87</td>
+                    <td>kplr010098844-2012179063303_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.6540</td>
+                    <td>1.86</td>
+                    <td>123.74</td>
+                    <td>0.03</td>
+                    <td>1620</td>
+                </tr>
+        
+                <tr>
+                    <td>64</td>
+                    <td>kplr010937029-2009166043257_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.6435</td>
+                    <td>4.03</td>
+                    <td>658.39</td>
+                    <td>0.05</td>
+                    <td>1252</td>
+                </tr>
+        
+                <tr>
+                    <td>124</td>
+                    <td>tess2024003055635-s0074-0000000063283780-0269-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.8292</td>
+                    <td>10.30</td>
+                    <td>227.71</td>
+                    <td>0.093</td>
+                    <td>915</td>
+                </tr>
+        
+                <tr>
+                    <td>52</td>
+                    <td>kplr011651712-2013131215648_llc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.6938</td>
+                    <td>11.38</td>
+                    <td>314.53</td>
+                    <td>0.099</td>
+                    <td>885</td>
+                </tr>
+        
+                <tr>
+                    <td>241</td>
+                    <td>tess2022190063128-s0054-0000000299220166-0227-s_lc.fits</td>
                     <td>True Positive</td>
-                    <td>9.79</td>
-                    <td>142.38</td>
-                    <td>0.09</td>
-                    <td>931</td>
+                    <td>0.5921</td>
+                    <td>3.22</td>
+                    <td>181.22</td>
+                    <td>0.043</td>
+                    <td>1349</td>
                 </tr>
         
                 <tr>
+                    <td>225</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8345</td>
+                    <td>60.58</td>
+                    <td>8.19</td>
+                    <td>0.642</td>
+                    <td>1459</td>
+                </tr>
+        
+                <tr>
+                    <td>226</td>
+                    <td>tess2022217014003-s0055-0000000027916356-0242-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.7609</td>
+                    <td>3.23</td>
+                    <td>405.97</td>
+                    <td>0.043</td>
+                    <td>1347</td>
+                </tr>
+        
+                <tr>
+                    <td>165</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8342</td>
+                    <td>69.35</td>
+                    <td>9.53</td>
+                    <td>0.209</td>
+                    <td>1511</td>
+                </tr>
+        
+                <tr>
+                    <td>100</td>
                     <td>tess2024003055635-s0074-0000000048503881-0269-s_lc.fits</td>
-                    <td>True Positive</td>
+                    <td>False Negative</td>
+                    <td>0.6839</td>
                     <td>10.02</td>
                     <td>181.97</td>
                     <td>0.091</td>
@@ -213,30 +1118,355 @@
                 </tr>
         
                 <tr>
-                    <td>tess2024003055635-s0074-0000000164836049-0269-s_lc.fits</td>
-                    <td>True Positive</td>
-                    <td>7.00</td>
-                    <td>150.19</td>
-                    <td>0.072</td>
-                    <td>1041</td>
-                </tr>
-        
-                <tr>
-                    <td>tess2024170053053-s0080-0000000120899739-0275-s_lc.fits</td>
-                    <td>True Negative</td>
-                    <td>6.84</td>
-                    <td>169.86</td>
-                    <td>0.071</td>
-                    <td>1049</td>
-                </tr>
-        
-                <tr>
+                    <td>116</td>
                     <td>synthetic_transit</td>
                     <td>False Negative</td>
-                    <td>64.15</td>
-                    <td>8.92</td>
-                    <td>0.245</td>
-                    <td>952</td>
+                    <td>0.8132</td>
+                    <td>43.94</td>
+                    <td>1.24</td>
+                    <td>0.869</td>
+                    <td>1988</td>
+                </tr>
+        
+                <tr>
+                    <td>131</td>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>0.8139</td>
+                    <td>16.49</td>
+                    <td>7.31</td>
+                    <td>0.16</td>
+                    <td>847</td>
+                </tr>
+        
+                <tr>
+                    <td>220</td>
+                    <td>tess2024003055635-s0074-0000000405717754-0269-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>0.7310</td>
+                    <td>4.44</td>
+                    <td>417.58</td>
+                    <td>0.053</td>
+                    <td>1212</td>
+                </tr>
+        
+                <tr>
+                    <td>210</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8353</td>
+                    <td>18.39</td>
+                    <td>4.16</td>
+                    <td>0.525</td>
+                    <td>341</td>
+                </tr>
+        
+                <tr>
+                    <td>208</td>
+                    <td>tess2022217014003-s0055-0000000121603794-0242-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.8793</td>
+                    <td>13.41</td>
+                    <td>291.92</td>
+                    <td>0.11</td>
+                    <td>838</td>
+                </tr>
+        
+                <tr>
+                    <td>158</td>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>0.8113</td>
+                    <td>83.42</td>
+                    <td>5.93</td>
+                    <td>0.654</td>
+                    <td>1126</td>
+                </tr>
+        
+                <tr>
+                    <td>141</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8311</td>
+                    <td>5.29</td>
+                    <td>6.69</td>
+                    <td>0.198</td>
+                    <td>388</td>
+                </tr>
+        
+                <tr>
+                    <td>208</td>
+                    <td>tess2022217014003-s0055-0000000121603794-0242-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.8793</td>
+                    <td>13.41</td>
+                    <td>291.92</td>
+                    <td>0.11</td>
+                    <td>838</td>
+                </tr>
+        
+                <tr>
+                    <td>228</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8278</td>
+                    <td>56.91</td>
+                    <td>7.67</td>
+                    <td>0.143</td>
+                    <td>450</td>
+                </tr>
+        
+                <tr>
+                    <td>245</td>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>0.8161</td>
+                    <td>82.70</td>
+                    <td>9.51</td>
+                    <td>0.221</td>
+                    <td>1288</td>
+                </tr>
+        
+                <tr>
+                    <td>202</td>
+                    <td>tess2024030031500-s0075-0000000123495874-0270-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>0.4455</td>
+                    <td>7.89</td>
+                    <td>309.63</td>
+                    <td>0.078</td>
+                    <td>1001</td>
+                </tr>
+        
+                <tr>
+                    <td>105</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8334</td>
+                    <td>44.51</td>
+                    <td>7.38</td>
+                    <td>0.165</td>
+                    <td>1481</td>
+                </tr>
+        
+                <tr>
+                    <td>204</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8297</td>
+                    <td>34.35</td>
+                    <td>2.01</td>
+                    <td>0.208</td>
+                    <td>1352</td>
+                </tr>
+        
+                <tr>
+                    <td>79</td>
+                    <td>kplr011449844-2009291181958_slc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.7394</td>
+                    <td>11.34</td>
+                    <td>2123.66</td>
+                    <td>0.099</td>
+                    <td>887</td>
+                </tr>
+        
+                <tr>
+                    <td>181</td>
+                    <td>tess2024003055635-s0074-0000000122066892-0269-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.6203</td>
+                    <td>8.45</td>
+                    <td>150.91</td>
+                    <td>0.081</td>
+                    <td>978</td>
+                </tr>
+        
+                <tr>
+                    <td>213</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8324</td>
+                    <td>87.20</td>
+                    <td>5.13</td>
+                    <td>0.105</td>
+                    <td>1000</td>
+                </tr>
+        
+                <tr>
+                    <td>223</td>
+                    <td>tess2024223182411-s0082-0000000139158696-0278-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.6051</td>
+                    <td>7.67</td>
+                    <td>165.23</td>
+                    <td>0.076</td>
+                    <td>1010</td>
+                </tr>
+        
+                <tr>
+                    <td>220</td>
+                    <td>tess2024003055635-s0074-0000000405717754-0269-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>0.7310</td>
+                    <td>4.44</td>
+                    <td>417.58</td>
+                    <td>0.053</td>
+                    <td>1212</td>
+                </tr>
+        
+                <tr>
+                    <td>175</td>
+                    <td>tess2024003055635-s0074-0000000267749620-0269-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.7705</td>
+                    <td>7.84</td>
+                    <td>154.05</td>
+                    <td>0.077</td>
+                    <td>1003</td>
+                </tr>
+        
+                <tr>
+                    <td>172</td>
+                    <td>tess2022190063128-s0054-0000000048217852-0227-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.5823</td>
+                    <td>10.96</td>
+                    <td>281.03</td>
+                    <td>0.097</td>
+                    <td>897</td>
+                </tr>
+        
+                <tr>
+                    <td>100</td>
+                    <td>tess2024003055635-s0074-0000000048503881-0269-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.6839</td>
+                    <td>10.02</td>
+                    <td>181.97</td>
+                    <td>0.091</td>
+                    <td>924</td>
+                </tr>
+        
+                <tr>
+                    <td>133</td>
+                    <td>tess2024030031500-s0075-0000000137754713-0270-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.7929</td>
+                    <td>13.61</td>
+                    <td>171.06</td>
+                    <td>0.112</td>
+                    <td>834</td>
+                </tr>
+        
+                <tr>
+                    <td>142</td>
+                    <td>tess2021204101404-s0041-0000000122785299-0212-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.7379</td>
+                    <td>10.85</td>
+                    <td>157.19</td>
+                    <td>0.096</td>
+                    <td>900</td>
+                </tr>
+        
+                <tr>
+                    <td>132</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8323</td>
+                    <td>42.70</td>
+                    <td>5.94</td>
+                    <td>0.433</td>
+                    <td>1408</td>
+                </tr>
+        
+                <tr>
+                    <td>174</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8331</td>
+                    <td>5.77</td>
+                    <td>7.57</td>
+                    <td>0.392</td>
+                    <td>943</td>
+                </tr>
+        
+                <tr>
+                    <td>112</td>
+                    <td>tess2024196212429-s0081-0000000272715773-0276-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>0.6831</td>
+                    <td>13.31</td>
+                    <td>156.8</td>
+                    <td>0.11</td>
+                    <td>840</td>
+                </tr>
+        
+                <tr>
+                    <td>242</td>
+                    <td>synthetic_transit</td>
+                    <td>False Negative</td>
+                    <td>0.8195</td>
+                    <td>68.85</td>
+                    <td>9.74</td>
+                    <td>0.479</td>
+                    <td>1422</td>
+                </tr>
+        
+                <tr>
+                    <td>51</td>
+                    <td>kplr011554435-2011177032512_slc.fits</td>
+                    <td>True Negative</td>
+                    <td>0.5221</td>
+                    <td>5.46</td>
+                    <td>6590.1</td>
+                    <td>0.061</td>
+                    <td>1131</td>
+                </tr>
+        
+                <tr>
+                    <td>178</td>
+                    <td>tess2022190063128-s0054-0000000299159378-0227-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.5892</td>
+                    <td>4.60</td>
+                    <td>152.6</td>
+                    <td>0.054</td>
+                    <td>1198</td>
+                </tr>
+        
+                <tr>
+                    <td>198</td>
+                    <td>eclipsing_binary</td>
+                    <td>True Negative</td>
+                    <td>0.8306</td>
+                    <td>7.81</td>
+                    <td>5.6</td>
+                    <td>0.661</td>
+                    <td>558</td>
+                </tr>
+        
+                <tr>
+                    <td>178</td>
+                    <td>tess2022190063128-s0054-0000000299159378-0227-s_lc.fits</td>
+                    <td>False Negative</td>
+                    <td>0.5892</td>
+                    <td>4.60</td>
+                    <td>152.6</td>
+                    <td>0.054</td>
+                    <td>1198</td>
+                </tr>
+        
+                <tr>
+                    <td>139</td>
+                    <td>tess2022190063128-s0054-0000000164458488-0227-s_lc.fits</td>
+                    <td>True Positive</td>
+                    <td>0.5025</td>
+                    <td>1.26</td>
+                    <td>71.65</td>
+                    <td>0.023</td>
+                    <td>1844</td>
                 </tr>
         
             </tbody>
