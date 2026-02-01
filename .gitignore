@@ -1,8 +1,7 @@
-venv/
-results/
-utils/
 data/metadata/kepler_observation_list.pkl
 kepler_local_data/
 joblib/
+utils/
+results/
 .DS_Store
 *.swp

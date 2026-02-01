@@ -11,7 +11,7 @@ from scipy import stats
 from collections import Counter
 
 import config
-from utils.visualization import visualize_detection_results
+from utils.plotting import visualize_detection_results
 
 logger = logging.getLogger(__name__)
 

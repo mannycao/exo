@@ -268,7 +268,8 @@ def find_transits_bls(time, flux):
             'power': results.power.tolist(),
             'best_period': best_period,
             'peak_periods': [best_period]
-        }
+        },
+        'max_power': results.power[best_period_idx]
     }
     logger.info(f"BLS detected transit: Period={best_period:.4f}, t0={best_t0:.4f}, Duration={best_duration:.4f}, Depth={best_depth:.4f}")
     return transit_info, periodicity_data

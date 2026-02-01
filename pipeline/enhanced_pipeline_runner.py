@@ -214,6 +214,25 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
             'cacl_stats': cacl_stats
         }
 
+        # Save predictions and explanations
+        np.save(result_dir / 'y_val_actual.npy', y_val_actual)
+        np.save(result_dir / 'y_pred_val_raw.npy', y_pred_val_raw)
+        with open(result_dir / 'all_pipeline_results_val.json', 'w') as f:
+            json.dump(all_pipeline_results_val, f, indent=2)
+        
+        def convert_numpy_to_list(obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            if isinstance(obj, dict):
+                return {k: convert_numpy_to_list(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [convert_numpy_to_list(i) for i in obj]
+            return obj
+
+        cacl_explanations_serializable = convert_numpy_to_list(cacl_explanations)
+        with open(result_dir / 'cacl_explanations.json', 'w') as f:
+            json.dump(cacl_explanations_serializable, f, indent=2)
+
         generate_report(
             results=all_pipeline_results_val,
             model_results=model_report_data,

@@ -159,6 +159,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
                 'success': True,
                 'transit_count': len(transit_info.get('times', [])),
                 'periodicity': periodicity_data.get('median_period'),
+                'bls_max_power': periodicity_data.get('max_power'),
                 'planet_properties': planet_properties,
                 'light_curve_plot_path': plot_path # Store the full path to the plot
             })
