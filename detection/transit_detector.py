@@ -217,14 +217,10 @@ def find_transits_bls(time, flux):
     # Create an array of durations to test
     durations = np.linspace(config.MIN_TRANSIT_DURATION, config.MAX_TRANSIT_DURATION, 10)
 
-    logger.debug(f"BLS periods array shape: {periods.shape}, min: {periods.min():.2f}, max: {periods.max():.2f}")
-    logger.debug(f"BLS durations array shape: {durations.shape}, min: {durations.min():.2f}, max: {durations.max():.2f}")
-    logger.debug(f"BLS min_period: {min_period:.2f}, max_period: {max_period:.2f}")
-
     try:
         results = model.power(periods, durations, oversample=10)
     except Exception as e:
-        logger.error(f"BLS model.power() failed for file (data saved to {problematic_data_dir}): {type(e).__name__}: {e}", exc_info=True)
+        logger.error(f"BLS model.power() failed for file: {type(e).__name__}: {e}", exc_info=True)
         # Fallback: return empty transit info if BLS fails
         transit_info = {
             'times': np.array([]),

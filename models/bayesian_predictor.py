@@ -27,7 +27,7 @@ class BayesianPredictor:
         self.n_samples = n_samples
         self.logger = logging.getLogger(__name__)
 
-    def predict(self, X_image, X_timeseries):
+    def predict(self, X_input):
         """
         Performs prediction with uncertainty estimation using MC Dropout.
 
@@ -35,8 +35,7 @@ class BayesianPredictor:
         with dropout enabled to sample from the approximate posterior distribution.
 
         Args:
-            X_image (np.ndarray): The image part of the input data.
-            X_timeseries (np.ndarray): The time-series part of the input data.
+            X_input (np.ndarray): The input data for the model.
 
         Returns:
             tuple: A tuple containing:
@@ -45,6 +44,8 @@ class BayesianPredictor:
                 - np.ndarray: The variance of the predictions across all samples,
                               representing the model's uncertainty.
                               Shape: (n_data_points,).
+                - np.ndarray: The full stack of predictions from all samples.
+                              Shape: (n_samples, n_data_points,).
         """
         self.logger.info(f"Performing {self.n_samples} stochastic forward passes for uncertainty estimation...")
         
@@ -56,7 +57,7 @@ class BayesianPredictor:
             try:
                 # The key to MC Dropout: set `training=True` during inference
                 # to ensure that dropout layers are active.
-                predictions = self.model([X_image, X_timeseries], training=True)
+                predictions = self.model(X_input, training=True)
                 predictions_list.append(predictions)
             except Exception as e:
                 self.logger.error(f"Error during a stochastic forward pass: {e}")
@@ -67,7 +68,7 @@ class BayesianPredictor:
         if not predictions_list:
             self.logger.error("No predictions were generated. Aborting.")
             # Return empty arrays with the correct number of dimensions
-            return np.array([]), np.array([])
+            return np.array([]), np.array([]), np.array([])
 
         # Stack the predictions along a new axis to create a [n_samples, n_data_points, 1] tensor
         predictions_stack = tf.stack(predictions_list, axis=0)
@@ -83,4 +84,4 @@ class BayesianPredictor:
         y_pred_uncertainty = tf.math.reduce_variance(predictions_stack, axis=0).numpy()
 
         self.logger.info("Uncertainty estimation complete.")
-        return y_pred_mean, y_pred_uncertainty
+        return y_pred_mean, y_pred_uncertainty, predictions_stack.numpy()

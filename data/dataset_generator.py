@@ -21,6 +21,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch # Added for LightCurveContrastiveDataset
 
+# Import the new Provenance object
+from data.provenance import DataProvenance
+
 logger = logging.getLogger(__name__)
 
 def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
@@ -31,9 +34,31 @@ def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
         start_file_processing = time.time()
 
         with fits.open(file_path, mode='readonly') as hdul:
+            primary_header = hdul[0].header
+            data_header = hdul[1].header
             data = hdul[1].data
+            
             time_lc = data.field('TIME')
             flux_lc = data.field('PDCSAP_FLUX')
+
+            # --- Create DataProvenance Object ---
+            # NOTE: Assuming standard FITS keywords. These may need adjustment for TESS etc.
+            source = primary_header.get('TELESCOP', 'Unknown')
+            instrument_id = primary_header.get('KEPLERID') or primary_header.get('TICID', 'UnknownID')
+            
+            # Calculate cadence from time array
+            cadence = np.nanmedian(np.diff(time_lc)) * 24 * 3600 if len(time_lc) > 1 else -1.0
+
+            provenance = DataProvenance(
+                source=source,
+                instrument_id=str(instrument_id),
+                cadence_s=float(cadence),
+                mission_quarter=primary_header.get('QUARTER'),
+                mission_sector=primary_header.get('SECTOR'),
+                detrending_method='PDC-MAP', # As this is PDCSAP_FLUX
+                injected= 'INJECT' in primary_header and primary_header['INJECT'],
+            )
+            # ---
 
             finite_mask = np.isfinite(flux_lc) & np.isfinite(time_lc)
             time_lc = time_lc[finite_mask]
@@ -115,7 +140,7 @@ def process_single_file(file_info, metadata_df, image_size, FIXED_LENGTH):
             plt.savefig(plot_path)
             plt.close()
 
-            return segment, img_norm, feature_vector, (1 if current_label == 'confirmed_planet' else 0), transit_info, periodicity_data, planet_properties, plot_path
+            return segment, img_norm, feature_vector, (1 if current_label == 'confirmed_planet' else 0), transit_info, periodicity_data, planet_properties, plot_path, provenance
 
     except Exception as e:
         logger.error(f"FAILED to process {os.path.basename(file_path)}. Error: {e}. Skipping.", exc_info=True)
@@ -133,6 +158,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
     all_images = []
     all_features = []
     all_labels = []
+    all_provenance = [] # To store provenance objects
     all_pipeline_results_raw = [] # Renamed to avoid confusion with augmented version
     
     FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
@@ -149,11 +175,12 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
 
     for i, result in enumerate(results):
         if result is not None:
-            segment, img_norm, feature_vector, label, transit_info, periodicity_data, planet_properties, plot_path = result
+            segment, img_norm, feature_vector, label, transit_info, periodicity_data, planet_properties, plot_path, provenance = result
             all_timeseries.append(segment)
             all_images.append(img_norm)
             all_features.append(feature_vector)
             all_labels.append(label)
+            all_provenance.append(provenance)
             all_pipeline_results_raw.append({
                 'file_path': file_info_list[i][0], # Original file path
                 'success': True,
@@ -166,7 +193,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
 
     if not all_timeseries:
         logger.error("CRITICAL: No files were successfully processed.")
-        return None, None, None, None, None # Return None for all expected outputs
+        return None, None, None, None, None, None # Return None for all expected outputs
 
     X_ts = np.array(all_timeseries)
     X_img = np.array(all_images)[..., np.newaxis]
@@ -175,7 +202,7 @@ def create_dataset(file_paths, labels, output_dir, metadata_df, image_size=(64, 
 
     logger.info(f"Multimodal dataset created successfully with {len(y)} samples (before augmentation).")
     print(f"DEBUG: all_pipeline_results_raw is defined: {'all_pipeline_results_raw' in locals()}") # Add this line
-    return X_ts, X_img, X_features, y, all_pipeline_results_raw
+    return X_ts, X_img, X_features, y, all_pipeline_results_raw, all_provenance
 
 def create_contrastive_dataset(file_paths, output_dir, FIXED_LENGTH=config.FIXED_LENGTH, augmentation_factor=config.AUGMENTATION_FACTOR):
     """

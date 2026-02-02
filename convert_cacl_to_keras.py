@@ -21,10 +21,14 @@ class PyTorchTransformerEncoder(nn.Module):
         self.input_proj = nn.Linear(input_dim, output_dim)
         encoder_layer = nn.TransformerEncoderLayer(d_model=output_dim, nhead=nhead, batch_first=True)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.norm = nn.LayerNorm(output_dim) # Added for structural consistency
+        self.output_proj = nn.Linear(output_dim, output_dim) # Added for structural consistency
 
     def forward(self, x):
         x = self.input_proj(x).unsqueeze(1)
         out = self.transformer(x)
+        out = self.norm(out) # Apply norm
+        out = self.output_proj(out) # Apply output projection
         return out.squeeze(1)
 
 class Projector(nn.Module):
@@ -40,8 +44,9 @@ class Projector(nn.Module):
 # --- Keras Model Definitions (copied from models/multimodal_model.py, modified) ---
 @tf.keras.utils.register_keras_serializable(name="KerasTransformerEncoder")
 class KerasTransformerEncoder(tf.keras.Model):
-    def __init__(self, input_dim, head_size, num_heads, ff_dim, num_layers):
-        super(KerasTransformerEncoder, self).__init__()
+    def __init__(self, input_dim, head_size, num_heads, ff_dim, num_layers, **kwargs):
+        # Handle the **kwargs for proper serialization
+        super(KerasTransformerEncoder, self).__init__(**kwargs)
         self.input_dim = input_dim
         self.head_size = head_size
         self.num_heads = num_heads
@@ -84,6 +89,22 @@ class KerasTransformerEncoder(tf.keras.Model):
             x = self.ffn_norm_layers[i](x + ffn_output)
             
         return tf.squeeze(x, axis=1) # [B, 1, D] -> [B, D]
+
+    def get_config(self):
+        """Enable serialization of the model."""
+        config = super(KerasTransformerEncoder, self).get_config()
+        config.update({
+            "input_dim": self.input_dim,
+            "head_size": self.head_size,
+            "num_heads": self.num_heads,
+            "ff_dim": self.ff_dim,
+            "num_layers": self.num_layers,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 # --- Weight Conversion Logic ---
 def convert_pytorch_to_keras(
