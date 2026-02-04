@@ -46,7 +46,7 @@ def run_pipeline(tic_id: int, mission: str, sector: str):
         # Layer 0/1
         ingestion_engine = IngestionEngine()
         # Layer 2
-        bayesian_wrapper = BayesianWrapper(model_path=MODEL_PATH)
+        bayesian_wrapper = BayesianWrapper()
         # Layer 4
         governor = DiscoveryGovernor()
         # Layer 5

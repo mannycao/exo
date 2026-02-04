@@ -16,10 +16,11 @@ class PipelineStatus(Enum):
 
 @dataclass
 class TargetConfig:
-    """Configuration for a target star to be scanned."""
-    tic_id: int
-    mission: str = "TESS"
-    sector: str = "all"
+    """Configuration for a target to be processed, identified by mission-specific ID."""
+    target_id: str
+    sector: int
+    source_file: str
+    mission: str = "Unknown" # Will be determined from FITS header if not provided
 
 @dataclass
 class TransitHypothesis:
@@ -29,6 +30,7 @@ class TransitHypothesis:
     passes through the discovery pipeline.
     """
     id: str  # Unique ID, e.g., "KIC1234567_P12.5"
+    mission: str # Mission name, e.g., "TESS", "Kepler"
     provenance: DataProvenance
     signal_params: Dict[str, float]
     
