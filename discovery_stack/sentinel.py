@@ -5,11 +5,12 @@ import glob
 import re
 import logging
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Generator, Any
 
 try:
     from astroquery.mast import Observations
+    from astropy.time import Time
     # Set a longer timeout for MAST queries
     Observations.TIMEOUT = 1800 # 30 minutes
 except ImportError:
@@ -22,6 +23,13 @@ except ImportError:
         def download_products(self, *args, **kwargs):
             return {"Status": "No Results"}
     Observations = MockObservations()
+    class MockTime: # Mock astropy.time.Time as well
+        def __init__(self, *args, **kwargs):
+            pass
+        @property
+        def mjd(self):
+            return 0
+    Time = MockTime
 
 
 from .registry import TargetRegistry
@@ -36,7 +44,7 @@ def _download_file_direct(url: str, local_path: str, logger: logging.Logger):
             return True
 
         logger.debug(f"Attempting direct download of {url} to {os.path.basename(local_path)}")
-        with requests.get(url, stream=True, timeout=300) as r: # Increased timeout for download
+        with requests.get(url, stream=True, timeout=300, verify=False) as r: # Increased timeout and added verify=False
             r.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             with open(local_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -100,11 +108,12 @@ class DataSentinel:
         Returns 0 if not found.
         """
         if mission == "TESS":
-            tess_sector = obs.get('tess_sector')
-            if tess_sector is not None:
-                return tess_sector
-            # Fallback to parsing from obsid if 'tess_sector' is not directly available
-            match = re.search(r'-s(\d+)', obs.get('obsid', ''), re.IGNORECASE)
+            # Prefer 'sequence_number' for TESS, which often corresponds to the sector
+            tess_id = obs.get('sequence_number')
+            if tess_id is not None and tess_id != 0:
+                return tess_id
+            # Fallback to parsing from obs_id if 'sequence_number' is not directly available or is 0
+            match = re.search(r'-s(\d+)', obs.get('obs_id', ''), re.IGNORECASE)
             return int(match.group(1)) if match else 0
         elif mission == "KEPLER":
             return obs.get('quarter', 0)
@@ -170,7 +179,7 @@ class DataSentinel:
         return None, None, None
 
 
-    def poll_mast_and_download(self, missions: List[str], start_date: str, max_downloads: int = 100):
+    def poll_mast_and_download(self, missions: List[str], start_date: str, max_downloads: int = 100, tess_sector: int = None):
         """
         Polls MAST for new light curve data from specified missions since a given date
         and downloads it using a direct requests-based approach.
@@ -179,6 +188,10 @@ class DataSentinel:
         
         download_count = 0
         start_date_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        
+        # Convert to astropy Time objects and then to MJD
+        start_mjd = Time(start_date_dt).mjd
+        now_mjd = Time(datetime.now()).mjd
 
         for mission in missions:
             # Check overall download limit
@@ -188,11 +201,15 @@ class DataSentinel:
             
             self.logger.info(f"Querying {mission} data...")
             try:
-                obs_table = Observations.query_criteria(
-                    obs_collection=mission,
-                    dataproduct_type="timeseries",
-                    t_min=start_date_dt.timestamp()
-                )
+                query_params = {
+                    "obs_collection": mission,
+                    "dataproduct_type": "timeseries",
+                    "t_min": [start_mjd, now_mjd]
+                }
+                if mission == "TESS" and tess_sector is not None:
+                    query_params["sequence_number"] = tess_sector
+
+                obs_table = Observations.query_criteria(**query_params)
 
                 if not obs_table:
                     self.logger.info(f"No new observations found for {mission} matching criteria.")
@@ -212,8 +229,10 @@ class DataSentinel:
                     self.logger.debug(f"--- Processing obs {idx+1}/{len(obs_table)} for {mission} ---")
                     self.logger.debug(f"  obsid: {obs.get('obsid', 'N/A')}, target_name: {obs.get('target_name', 'N/A')}")
                     self.logger.debug(f"  Available obs keys: {obs.keys()}")
-                    if idx < 5: # Log full obs data for first few observations
-                        self.logger.debug(f"  Full obs data (first 5): {obs}")
+                    if mission == "TESS": # Added debug for TESS specific keys
+                        self.logger.debug(f"  TESS obs_id: {obs.get('obs_id', 'N/A')}")
+                        self.logger.debug(f"  TESS s_region: {obs.get('s_region', 'N/A')}")
+                        self.logger.debug(f"  TESS sequence_number: {obs.get('sequence_number', 'N/A')}")
                     # --- End Debug Logging ---
 
                     target_id_from_mast = str(obs['target_name'])

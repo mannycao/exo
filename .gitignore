@@ -3,5 +3,6 @@ kepler_local_data/
 joblib/
 utils/
 results/
+/kep
 .DS_Store
 *.swp

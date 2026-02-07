@@ -19,22 +19,22 @@ DEFAULT_LOG_FILE = RESULTS_DIR / "pipeline_general.log"
 
 # --- Data Fetching ---
 EXOPLANET_ARCHIVE_TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP"
-CONFIRMED_PLANETS_DIR = "/Users/emmanuel/proj/phd/kep/confirmed_planets/mastDownload/TESS/"
-FALSE_POSITIVES_DIR = "/Users/emmanuel/proj/phd/kep/false_positives/"
+CONFIRMED_PLANETS_DIR = "/Users/emmanuel/proj/exo/kepler_local_data/confirmed_planets"
+FALSE_POSITIVES_DIR = "/Users/emmanuel/proj/exo/kepler_local_data/false_positives"
 
 # --- OPTIMIZATION 1: More Sensitive Transit Detection ---
 TRANSIT_SENSITIVITY = 2.0
 PROMINENCE_FACTOR = 0.3
 MIN_TRANSIT_DURATION = 0.04
 MAX_TRANSIT_DURATION = 0.6
-BLS_POWER_THRESHOLD = 1e-6 # Adjusted to be very permissive for survey purposes
+BLS_POWER_THRESHOLD = 0.001 # Adjusted for testing purposes to ensure detection of synthetic transits
 
 # --- Feature Extraction for Multimodal Model ---
 WINDOW_SIZE = 1.0
 IMAGE_SIZE = (64, 64)
 
 FIXED_LENGTH = 2048 # Define a fixed length for time-series segments
-FEATURE_VECTOR_LENGTH = 1024 # New parameter for feature vector length
+FEATURE_VECTOR_LENGTH = 512 # New parameter for feature vector length
 
 # --- File Type Constants ---
 FILE_TYPE_CONFIRMED_PLANET = 'confirmed_planet'
@@ -59,8 +59,6 @@ AUGMENTATION_FACTOR = 1 # Reduced for potential speedup
 
 MIN_SNR = 3
 
-DEFAULT_THRESHOLD = 0.5 # Adjusted for broader candidate identification
-
 # --- CACL Explainable AI (XAI) Parameters ---
 CACL_MODEL_PATH = BASE_DIR / "models" / "cacl_transformer_feature_extractor.pt"
 CACL_K_PARTITIONS = 4 # Number of feature partitions for CACL
@@ -75,9 +73,4 @@ CACL_DROPOUT = 0.1 # Dropout rate for CACL transformer
 # Bayesian Model Parameters
 CACL_ETA = 0.2        # Threshold for semantic agreement in CACL explanation
 CACL_CONTEXT_THRESHOLD_QUANTILE = 0.1 # Quantile threshold for context similarity in CACL explanation
-
-# --- Full Scale Survey Parameters ---
-MODEL_PATH = BASE_DIR / "results" / "run_20260125-144401" / "exo_multimodal_model_best.h5"
-CHECKPOINT_INTERVAL = 1000 # Save partial results every N targets
-SURVEY_RESULTS_DIR = BASE_DIR / "paper2_experiments"
 

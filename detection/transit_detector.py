@@ -169,23 +169,23 @@ def find_transits_bls(time, flux):
     logger.info("Running BLS transit detection.")
 
     if len(time) == 0 or len(flux) == 0:
-        logger.info("Skipping BLS: time or flux array is empty.")
+        logger.warning("Skipping BLS (find_transits_bls): time or flux array is empty.")
         return None, None
 
     if np.isnan(time).any() or np.isinf(time).any():
-        logger.info("Skipping BLS: time array contains NaN or Inf values.")
+        logger.warning("Skipping BLS (find_transits_bls): time array contains NaN or Inf values after finite filter.")
         return None, None
 
     if np.isnan(flux).any() or np.isinf(flux).any():
-        logger.info("Skipping BLS: flux array contains NaN or Inf values.")
+        logger.warning("Skipping BLS (find_transits_bls): flux array contains NaN or Inf values after finite filter.")
         return None, None
 
     if np.std(flux) < 1e-6: # Check for nearly constant flux
-        logger.info("Skipping BLS: flux array is nearly constant.")
+        logger.warning("Skipping BLS (find_transits_bls): flux array is nearly constant.")
         return None, None
 
     if not np.all(np.diff(time) > 0): # Check for monotonic increasing time
-        logger.info("Skipping BLS: time array is not monotonically increasing.")
+        logger.warning("Skipping BLS (find_transits_bls): time array is not monotonically increasing.")
         return None, None
 
     logger.debug(f"BLS input time shape: {time.shape}, min: {time.min():.2f}, max: {time.max():.2f}, has NaNs: {np.isnan(time).any()}")
@@ -204,12 +204,12 @@ def find_transits_bls(time, flux):
     max_period = (time[-1] - time[0]) / 2.0 # Max period is half the observation span
 
     if max_period <= min_period:
-        logger.info(f"Skipping BLS: max_period ({max_period:.2f}) is not greater than min_period ({min_period:.2f}).")
+        logger.warning(f"Skipping BLS (find_transits_bls): max_period ({max_period:.2f}) is not greater than min_period ({min_period:.2f}). Observation span too short.")
         return None, None
 
     # Ensure a reasonable range for periods to avoid issues with np.linspace
     if (max_period - min_period) < 1e-5: # Arbitrary small threshold
-        logger.info(f"Skipping BLS: Period range ({max_period - min_period:.2e}) is too small.")
+        logger.warning(f"Skipping BLS (find_transits_bls): Period range ({max_period - min_period:.2e}) is too small.")
         return None, None
 
     periods = np.linspace(min_period, max_period, 1000)
@@ -220,24 +220,8 @@ def find_transits_bls(time, flux):
     try:
         results = model.power(periods, durations, oversample=10)
     except Exception as e:
-        logger.error(f"BLS model.power() failed for file: {type(e).__name__}: {e}", exc_info=True)
-        # Fallback: return empty transit info if BLS fails
-        transit_info = {
-            'times': np.array([]),
-            'depths': np.array([]),
-            'durations': np.array([]),
-            'peak_indices': np.array([])
-        }
-        periodicity_data = {
-            'median_period': None,
-            'periodogram': {
-                'period': [],
-                'power': [],
-                'best_period': None,
-                'peak_periods': []
-            }
-        }
-        return transit_info, periodicity_data
+        logger.error(f"BLS model.power() failed for current file due to: {type(e).__name__}: {e}. Skipping.", exc_info=True)
+        return None, None
 
     # Find the period with the highest power
     best_period_idx = np.argmax(results.power)
@@ -247,7 +231,7 @@ def find_transits_bls(time, flux):
     best_depth = results.depth[best_period_idx]
 
     if results.power[best_period_idx] < config.BLS_POWER_THRESHOLD:
-        logger.info(f"No significant transit detected with BLS (max power: {results.power[best_period_idx]:.2f} below threshold {config.BLS_POWER_THRESHOLD}).")
+        logger.warning(f"Skipping BLS (find_transits_bls): No significant transit detected (max power: {results.power[best_period_idx]:.2f} below threshold {config.BLS_POWER_THRESHOLD:.2e}).")
         return None, None
 
     # Populate transit_info and periodicity_data

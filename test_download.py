@@ -48,8 +48,9 @@ def run_download_test():
     try:
         # Initialize components
         registry = TargetRegistry(TEST_REGISTRY_FILE)
-        # DataSentinel now initialized with download_dir and max_disk_usage_pct
         sentinel = DataSentinel(registry, TEST_DOWNLOAD_DIR, MAX_DISK_USAGE_PCT)
+        # Ensure DataSentinel's logger is also set to DEBUG for verbose output
+        logging.getLogger('discovery_stack.sentinel').setLevel(logging.DEBUG)
 
         start_date_str = (datetime.now() - timedelta(days=START_DATE_DAYS_AGO)).strftime("%Y-%m-%d")
 
