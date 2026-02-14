@@ -1,0 +1,10 @@
+--2026-02-09 09:29:16--  http://exoplanetarchive.ipac.caltech.edu/data/ETSS/Kepler/UNKNOWN_PATH_SEGMENT_1/UNKNOWN_PATH_SEGMENT_2/UNKNOWN_PATH_SEGMENT_3/kplr4042026_llc.fits
+Resolving exoplanetarchive.ipac.caltech.edu (exoplanetarchive.ipac.caltech.edu)... 134.4.25.48
+Connecting to exoplanetarchive.ipac.caltech.edu (exoplanetarchive.ipac.caltech.edu)|134.4.25.48|:80... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://exoplanetarchive.ipac.caltech.edu/data/ETSS/Kepler/UNKNOWN_PATH_SEGMENT_1/UNKNOWN_PATH_SEGMENT_2/UNKNOWN_PATH_SEGMENT_3/kplr4042026_llc.fits [following]
+--2026-02-09 09:29:16--  https://exoplanetarchive.ipac.caltech.edu/data/ETSS/Kepler/UNKNOWN_PATH_SEGMENT_1/UNKNOWN_PATH_SEGMENT_2/UNKNOWN_PATH_SEGMENT_3/kplr4042026_llc.fits
+Connecting to exoplanetarchive.ipac.caltech.edu (exoplanetarchive.ipac.caltech.edu)|134.4.25.48|:443... connected.
+HTTP request sent, awaiting response... 404 Not Found
+2026-02-09 09:29:17 ERROR 404: Not Found.
+

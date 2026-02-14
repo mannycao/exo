@@ -123,12 +123,33 @@ def advanced_phase_folding(time, flux, period, n_bins=128):
     Performs phase folding with binning and averaging to create a cleaner 2D representation.
     """
     phase = (time % period) / period
+    
+    # Ensure phase is a regular numpy array and handle NaNs explicitly
+    if isinstance(phase, np.ma.MaskedArray):
+        phase = phase.filled(np.nan)
+    
+    # Filter out NaN values from phase and corresponding flux
+    valid_mask = np.isfinite(phase)
+    phase = phase[valid_mask]
+    flux = flux[valid_mask] # Apply the same mask to flux to keep them aligned
+
+    if len(phase) == 0:
+        logger.warning("advanced_phase_folding: No valid phase data after filtering NaNs. Returning empty binned_flux.")
+        return np.zeros(n_bins) # Return an array of zeros if no valid data
+
     binned_flux = np.zeros(n_bins)
     bin_counts = np.zeros(n_bins)
     
     for i in range(len(phase)):
+        # Ensure bin_index is within bounds after int conversion, even if phase[i] is something like 1.0
         bin_index = int(phase[i] * n_bins)
-        if 0 <= bin_index < n_bins:
+        
+        # Additional check to ensure bin_index is valid, especially for edge cases where phase[i] might be 1.0
+        # which would result in bin_index == n_bins (out of bounds)
+        if bin_index == n_bins:
+            bin_index = n_bins - 1
+            
+        if 0 <= bin_index < n_bins: # This check is already there, but good to keep.
             binned_flux[bin_index] += flux[i]
             bin_counts[bin_index] += 1
             

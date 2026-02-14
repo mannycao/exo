@@ -29,7 +29,12 @@ logger = logging.getLogger(__name__)
 def process_single_file(file_info_dict, image_size, FIXED_LENGTH):
     """Helper function to process a single light curve file."""
     file_path = file_info_dict['file_path']
-    current_label = file_info_dict['type']
+    raw_label = file_info_dict['type']
+    # Explicitly ensure current_label is a scalar string immediately
+    if isinstance(raw_label, pd.Series):
+        current_label = str(raw_label.iloc[0]) if not raw_label.empty else 'UNKNOWN'
+    else:
+        current_label = str(raw_label)
     
     try:
         start_file_processing = time.time()
@@ -101,6 +106,16 @@ def process_single_file(file_info_dict, image_size, FIXED_LENGTH):
             injected=injected,
         )
         # ---
+
+        # Ensure time_lc and flux_lc are numpy arrays and handle masked values
+        if isinstance(time_lc, np.ma.MaskedArray):
+            time_lc = time_lc.filled(np.nan) # Replace masked values with NaN
+        if isinstance(flux_lc, np.ma.MaskedArray):
+            flux_lc = flux_lc.filled(np.nan) # Replace masked values with NaN
+
+        # Convert to regular numpy arrays if they are not already
+        time_lc = np.asarray(time_lc, dtype=float)
+        flux_lc = np.asarray(flux_lc, dtype=float)
 
         finite_mask = np.isfinite(flux_lc) & np.isfinite(time_lc)
         time_lc = time_lc[finite_mask]
