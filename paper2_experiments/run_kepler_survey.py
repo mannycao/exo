@@ -81,21 +81,23 @@ def main():
     
     survey_results = []
 
-    # 1. Load Metadata and Filter for Kepler
+    # 1. Load Metadata for all relevant sources (Kepler and TESS)
     FULL_METADATA_CSV = project_root / "data_files" / "full_metadata_v2.csv"
 
     if FULL_METADATA_CSV.exists():
-        final_metadata_df = pd.read_csv(FULL_METADATA_CSV)
-        kepler_metadata_df = final_metadata_df[final_metadata_df['source'] == 'KEPLER'].copy()
+        combined_metadata_df = pd.read_csv(FULL_METADATA_CSV)
+        # We assume 'source' column in full_metadata_v2.csv correctly identifies KEPLER vs TESS
+        # And that target_id is unique within each source.
+        
         logger.info(f"Loaded combined metadata from: {FULL_METADATA_CSV}")
-        logger.info(f"Filtered to {len(kepler_metadata_df)} Kepler entries.")
+        logger.info(f"Found {len(combined_metadata_df[combined_metadata_df['source'] == 'KEPLER'])} Kepler entries and {len(combined_metadata_df[combined_metadata_df['source'] == 'TESS'])} TESS entries.")
     else:
         logger.error(f"Combined metadata CSV not found at {FULL_METADATA_CSV}. Aborting.")
         sys.exit(1)
 
-    # Index metadata by target_id for fast lookup
-    kepler_metadata_df.set_index('target_id', inplace=True)
-    logger.info("Kepler metadata indexed by target_id.")
+    # Index metadata by a combination of 'target_id' and 'source' for fast and unique lookup
+    combined_metadata_df.set_index(['target_id', 'source'], inplace=True)
+    logger.info("Combined metadata indexed by (target_id, source).")
 
     # 2. Load the Model
     # Search for the model file
@@ -119,49 +121,68 @@ def main():
         logger.error(f"Failed to load model from {model_file_to_load}: {e}. Exiting.")
         sys.exit(1)
 
-    # 3. Iterate through Kepler FITS files
-    # Use glob to find all kplr*_llc.fits files in the specified data directories
-    # Using the same base directories as before, but a specific pattern
-    kepler_data_search_path_confirmed = paper2_config.CONFIRMED_PLANETS_DIR + "/kplr*_llc.fits"
-    kepler_data_search_path_false_pos = paper2_config.FALSE_POSITIVES_DIR + "/kplr*_llc.fits"
+    # 3. Iterate through light curve files (Kepler and TESS)
+    # Use glob to find kplr*_llc.fits files in Kepler directories
+    kepler_files = []
+    kepler_files.extend(glob.glob(paper2_config.CONFIRMED_PLANETS_DIR + "/**/kplr*_llc.fits", recursive=True))
+    kepler_files.extend(glob.glob(paper2_config.FALSE_POSITIVES_DIR + "/**/kplr*_llc.fits", recursive=True))
 
-    all_kepler_files = []
-    all_kepler_files.extend(glob.glob(kepler_data_search_path_confirmed, recursive=True))
-    all_kepler_files.extend(glob.glob(kepler_data_search_path_false_pos, recursive=True))
+    # Use glob to find tess*_lc.fits files in TESS directories
+    tess_files = []
+    tess_files.extend(glob.glob(paper2_config.CONFIRMED_PLANETS_DIR + "/**/tess*_lc.fits", recursive=True))
+    tess_files.extend(glob.glob(paper2_config.FALSE_POSITIVES_DIR + "/**/tess*_lc.fits", recursive=True))
 
-    if not all_kepler_files:
-        logger.error("No Kepler light curve files found using glob patterns. Aborting.")
+    all_light_curve_files = []
+    all_light_curve_files.extend(kepler_files)
+    all_light_curve_files.extend(tess_files)
+
+    initial_total_files = len(all_light_curve_files) # Store the initial length
+
+    if not all_light_curve_files:
+        logger.error("No Kepler or TESS light curve files found using glob patterns. Aborting.")
         sys.exit(1)
     
-    logger.info(f"Found {len(all_kepler_files)} Kepler light curve files for processing.")
+    logger.info(f"Found {initial_total_files} light curve files (Kepler and TESS) for processing.")
 
     # Loop through each file with robust error handling
-    for i, file_path_str in enumerate(tqdm(all_kepler_files, desc="Running Kepler Ablation Survey")):
+    for i, file_path_str in enumerate(tqdm(all_light_curve_files, desc="Running Ablation Survey")):
         target_id = np.nan # Default for logging if extraction fails early
         
         try:
-            # Extract target_id from filename
+            # Extract target_id and source (Kepler/TESS) from filename
             file_name = Path(file_path_str).name
-            match_kplr = re.search(r'kplr(\d+)-\d+_llc\.fits', file_name)
             
-            if not match_kplr:
-                logger.warning(f"Could not extract target_id from Kepler filename: {file_name}. Skipping.")
-                # Atomic error handling: skip without appending partial results
-                continue
-            
-            target_id_str = match_kplr.group(1)
-            target_id = int(target_id_str)
+            # Try Kepler naming convention first
+            match_kplr = re.search(r'kplr(\d+)-\d+_(s|l)lc\.fits', file_name)
+            if match_kplr:
+                target_id = int(match_kplr.group(1))
+                source = 'KEPLER'
+            else:
+                # Try TESS naming convention
+                match_tess = re.search(r'tess\d{13}-s\d{4}-(\d{8,16})-\d{4}-s_lc\.fits', file_name)
+                if match_tess:
+                    target_id = int(match_tess.group(1))
+                    source = 'TESS'
+                else:
+                    logger.warning(f"Could not extract target_id from filename: {file_name}. Skipping.")
+                    continue
 
-            # Retrieve true_label and period from metadata
-            true_label_raw = kepler_metadata_df.at[target_id, 'true_label'] if target_id in kepler_metadata_df.index else 'CANDIDATE'
+
+            # Retrieve true_label and period from combined metadata using (target_id, source)
+            try:
+                metadata_entry = combined_metadata_df.loc[(target_id, source)]
+                true_label_raw = metadata_entry.at['true_label']
+                period_from_metadata_raw = metadata_entry.at['period']
+            except KeyError:
+                logger.warning(f"Metadata entry not found for (ID: {target_id}, Source: {source}). Assuming CANDIDATE and NaN period. File: {file_name}")
+                true_label_raw = 'CANDIDATE'
+                period_from_metadata_raw = np.nan
             
             # Robustly ensure true_label is a scalar string
             if isinstance(true_label_raw, pd.Series):
                 true_label = str(true_label_raw.iloc[0]) if not true_label_raw.empty else 'UNKNOWN'
             else:
                 true_label = str(true_label_raw)
-            
-            period_from_metadata_raw = kepler_metadata_df.at[target_id, 'period'] if target_id in kepler_metadata_df.index else np.nan
             
             # Robustly ensure period_from_metadata is a scalar
             if isinstance(period_from_metadata_raw, pd.Series):
@@ -261,8 +282,7 @@ def main():
         logger.info(f"Final survey results saved to: {OUTPUT_CSV_PATH}")
     else:
         logger.warning("No survey results to save.")
-
-    logger.info(f"Kepler survey (Ablation) complete: Processed {len(all_kepler_files)} files (actual results: {len(survey_results)}).")
+    logger.info(f"Ablation survey complete: Processed {initial_total_files} files (actual results: {len(survey_results)}).")
     
     logging.shutdown()
 
