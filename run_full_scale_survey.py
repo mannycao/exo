@@ -52,7 +52,12 @@ def scan_data_directories(confirmed_dir, false_positives_dir):
                     file_path = Path(root) / file
                     # Extract target_id from filename (e.g., kplr010000941-...)
                     # Assuming Kepler IDs are at the beginning of the filename before the first hyphen
-                    target_id = file.split('-')[0].replace('kplr', '') # Remove 'kplr' prefix
+                    raw_id_str = file.split('-')[0].replace('kplr', '')
+                    if raw_id_str.isdigit():
+                        target_id = str(int(raw_id_str)) # Convert to int to remove leading zeros, then back to str
+                    else:
+                        target_id = raw_id_str # Keep as is if not purely numeric (e.g., TESS IDs)
+
                     target_data.append({
                         'target_id': target_id,
                         'file_path': file_path.as_posix(),
@@ -138,11 +143,9 @@ def run_full_scale_survey():
             # Ingest/Load data for a single target
             # create_dataset returns a tuple of (X_ts, X_img, X_features, y, all_pipeline_results)
             # We need to wrap it in a list as create_dataset expects a list of items
-            X_ts, X_img, X_features, y, all_pipeline_results = create_dataset(
+            X_ts, X_img, X_features, y, all_pipeline_results, all_provenance = create_dataset(
                 file_paths=[{'file_path': file_path_str, 'type': true_label_str}],
-                labels=[true_label_str],
                 output_dir=None, # Don't save individual processed data during survey
-                metadata_df=pd.read_csv(config.METADATA_DIR / "exoplanet_labels.csv"), # Assuming this metadata is needed
                 image_size=config.IMAGE_SIZE
             )
             
@@ -152,10 +155,10 @@ def run_full_scale_survey():
 
             # Run model prediction (multimodal_model expects a list of inputs)
             # The model outputs a single probability for the positive class (planet)
-            mean_confidence_raw = multimodal_model.predict([X_img, X_ts, X_features])[0][0]
+            p_joint = multimodal_model.predict([X_img, X_ts, X_features])[0][0]
             
             # Get period from all_pipeline_results
-            period = all_pipeline_results[0].get('period', np.nan)
+            period = all_pipeline_results[0].get('periodicity', np.nan)
             
             # Get CACL explanation for max_disagreement
             # explain_with_cacl expects a single data_sample (time-series)
@@ -165,25 +168,26 @@ def run_full_scale_survey():
                 dependency_matrix=None, # Not pre-computed for survey
                 context_avg_embeddings=None, # Not pre-computed for survey
             )
-            max_disagreement = cacl_explanation.get('max_disagreement', 0.0)
+            cacl_max_disagreement = cacl_explanation.get('max_disagreement', 0.0)
 
-            # Derive prob_1d and prob_2d (conceptual)
-            prob_1d = min(1.0, mean_confidence_raw + max_disagreement / 2)
-            prob_2d = max(0.0, mean_confidence_raw - max_disagreement / 2)
+            # Derive p_1d and p_2d (conceptual)
+            p_1d = min(1.0, p_joint + cacl_max_disagreement / 2)
+            p_2d = max(0.0, p_joint - cacl_max_disagreement / 2)
+            disagreement = abs(p_1d - p_2d)
 
             survey_results.append({
                 'target_id': target_id,
-                'true_label_str': true_label_str,
+                'true_label': true_label_str, # Renamed
                 'period': period,
-                'mean_confidence': mean_confidence_raw,
-                'max_disagreement': max_disagreement,
-                'prob_1d': prob_1d,
-                'prob_2d': prob_2d
+                'p_joint': p_joint, # Renamed
+                'p_1d': p_1d, # Added
+                'p_2d': p_2d, # Added
+                'disagreement': disagreement # Renamed and calculated
             })
             processed_count += 1
 
             # Update candidate/rejection counts (using a simple threshold for summary)
-            if mean_confidence_raw > config.DEFAULT_THRESHOLD:
+            if p_joint > config.DEFAULT_THRESHOLD:
                 candidate_count += 1
             else:
                 rejection_count += 1
@@ -195,18 +199,18 @@ def run_full_scale_survey():
         # 4. Save Checkpoints
         if (i + 1) % CHECKPOINT_INTERVAL == 0:
             partial_df = pd.DataFrame(survey_results)
-            checkpoint_file = SURVEY_RESULTS_DIR / f"survey_results_partial_{i+1}.csv"
+            checkpoint_file = config.SURVEY_RESULTS_DIR / f"survey_results_partial_{i+1}.csv"
             partial_df.to_csv(checkpoint_file, index=False)
             logger.info(f"Checkpoint saved: {checkpoint_file} ({len(survey_results)} items processed).")
 
     # 5. Final Output
     final_df = pd.DataFrame(survey_results)
-    final_output_file = SURVEY_RESULTS_DIR / "survey_results_final.csv"
+    final_output_file = config.SURVEY_RESULTS_DIR / "survey_results_final.csv"
     final_df.to_csv(final_output_file, index=False)
     logger.info(f"Final survey results saved to: {final_output_file}")
 
     logger.info(f"Survey complete: Processed {processed_count} targets.")
-    logger.info(f"Summary: Found {candidate_count} Candidates (mean_confidence > {config.DEFAULT_THRESHOLD}), {rejection_count} Rejections.")
+    logger.info(f"Summary: Found {candidate_count} Candidates (p_joint > {config.DEFAULT_THRESHOLD}), {rejection_count} Rejections.")
     logger.info(f"Total targets in catalog: {len(all_targets)}")
 
 if __name__ == '__main__':

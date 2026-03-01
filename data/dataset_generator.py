@@ -40,7 +40,7 @@ def process_single_file(file_info_dict, image_size, FIXED_LENGTH):
         start_file_processing = time.time()
 
         if file_path.endswith(('.fits', '.npz')):
-            with fits.open(file_path, mode='readonly') as hdul:
+            with fits.open(file_path, mode='readonly', ignore_missing_simple=True) as hdul:
                 primary_header = hdul[0].header
                 data_header = hdul[1].header
                 data = hdul[1].data

@@ -45,11 +45,9 @@ def run_enhanced_pipeline(light_curve_files, output_dir_str, timestamp):
         return None
     exoplanet_metadata_df = pd.read_csv(metadata_path)
 
-    X_ts_raw, X_img_raw, X_features_raw, y_raw, all_pipeline_results_raw = create_dataset(
-        file_paths=[item['file_path'] for item in light_curve_files],
-        labels=[item['type'] for item in light_curve_files],
+    X_ts_raw, X_img_raw, X_features_raw, y_raw, all_pipeline_results_raw, all_provenance_raw = create_dataset(
+        file_paths=light_curve_files,
         output_dir=processed_data_dir,
-        metadata_df=exoplanet_metadata_df,
         image_size=config.IMAGE_SIZE
     )
     

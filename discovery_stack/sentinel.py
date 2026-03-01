@@ -6,7 +6,7 @@ import re
 import logging
 import requests
 from datetime import datetime
-from typing import List, Generator, Any
+from typing import List, Generator, Any, Dict, Tuple
 
 try:
     from astroquery.mast import Observations
@@ -292,21 +292,75 @@ class DataSentinel:
             except Exception as e:
                 self.logger.error(f"Error polling {mission} data: {e}", exc_info=True)
 
-    def check_for_new_data(self, watch_folder: str) -> Generator[TargetConfig, None, None]:
-        """Scans the specified folder for new, unprocessed .fits files."""
-        self.logger.info(f"Scanning for new data in: {watch_folder}")
-        # Only look for .fits files
-        fits_files = glob.glob(os.path.join(watch_folder, '**/*.fits'), recursive=True)
-        
-        for file_path in fits_files:
-            filename = os.path.basename(file_path)
-            target_id, unique_obs_id, mission = self._parse_filename(filename)
+    def _parse_kepler_sh_urls(self, kepler_sh_path: str) -> Dict[str, List[Tuple[str, str]]]:
+        """
+        Parses a local Kepler.sh script for wget commands that download FITS files
+        and extracts Kepler IDs and their corresponding URLs.
+        Returns a dictionary: {kic_id: [(output_filename, url), ...]}
+        """
+        self.logger.info(f"Parsing {kepler_sh_path} for wget commands...")
+        wget_commands_by_kic = {}
+        try:
+            with open(kepler_sh_path, 'r') as f:
+                for line in f:
+                    # Regex to extract output filename (group 1), KIC ID (group 2), and full URL (group 3)
+                    match = re.search(r"wget -O '(kplr(\d+)-.*?\.fits)' '(http://exoplanetarchive\.ipac\.caltech\.edu:80/data/ETSS//Kepler/\d+/\d+/\d+/kplr\2-.*?\.fits)'", line)
+                    if match:
+                        output_filename_with_ext = match.group(1)
+                        kic_id_full_str = match.group(2)
+                        full_url = match.group(3)
 
-            if target_id is None or unique_obs_id is None or mission is None:
-                self.logger.warning(f"Could not fully parse filename {filename} for registry check. Skipping.")
+                        kic_id = str(int(kic_id_full_str)) # Convert to int and back to str to remove leading zeros if any
+
+                        if kic_id not in wget_commands_by_kic:
+                            wget_commands_by_kic[kic_id] = []
+                        wget_commands_by_kic[kic_id].append((output_filename_with_ext, full_url))
+        except FileNotFoundError:
+            self.logger.error(f"Error: {kepler_sh_path} not found. Please ensure it's in the correct directory.")
+            return {}
+        except Exception as e:
+            self.logger.error(f"An unexpected error occurred while parsing {kepler_sh_path}: {e}")
+            return {}
+        
+        self.logger.info(f"Found {len(wget_commands_by_kic)} unique KIC IDs with FITS wget commands in {kepler_sh_path}.")
+        return wget_commands_by_kic
+
+    def poll_from_kepler_sh_and_download_kepler(self, kepler_sh_path: str, kepler_ids_to_download: List[str]):
+        """
+        Downloads Kepler FITS files from URLs specified in a local Kepler.sh script,
+        filtered by a provided list of Kepler IDs.
+        """
+        self.logger.info(f"Downloading Kepler data using URLs from {kepler_sh_path}, filtered by provided KIC IDs.")
+        
+        wget_urls_by_kic = self._parse_kepler_sh_urls(kepler_sh_path)
+        download_count = 0
+
+        for kic_id in kepler_ids_to_download:
+            if kic_id not in wget_urls_by_kic:
+                self.logger.warning(f"KIC ID {kic_id} not found in {kepler_sh_path}. Skipping.")
                 continue
 
-            # Check registry one last time before yielding
-            if not self.registry.is_processed(target_id, unique_obs_id):
-                self.logger.info(f"Found new target for processing: {filename}")
-                yield TargetConfig(target_id=target_id, sector=unique_obs_id, source_file=file_path, mission=mission)
+            kic_download_dir = os.path.join(self.download_dir, kic_id)
+            os.makedirs(kic_download_dir, exist_ok=True)
+
+            for output_filename, file_url in wget_urls_by_kic[kic_id]:
+                local_path = os.path.join(kic_download_dir, output_filename)
+                unique_obs_id = 0 # Cannot derive quarter/sector/campaign from this specific URL structure
+
+                # Check if already processed using the registry (KICID + 0 as unique_obs_id for now)
+                if self.registry.is_processed(kic_id, unique_obs_id):
+                    self.logger.debug(f"Skipping already processed file for KIC {kic_id}: {output_filename}")
+                    continue
+
+                if self.disk_manager.has_sufficient_space():
+                    self.logger.info(f"Downloading {output_filename} for KIC {kic_id} from {file_url}")
+                    if _download_file_direct(file_url, local_path, self.logger):
+                        download_count += 1
+                        self.registry.mark_processed(kic_id, unique_obs_id, "Downloaded", datetime.utcnow().isoformat())
+                    else:
+                        self.logger.error(f"Failed to download {output_filename} for KIC {kic_id}.")
+                else:
+                    self.logger.warning("Disk space limit reached. Stopping downloads.")
+                    return
+        
+        self.logger.info(f"Finished downloading from {kepler_sh_path}. Total files downloaded: {download_count}")

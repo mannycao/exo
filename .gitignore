@@ -1,8 +1,6 @@
 data/metadata/kepler_observation_list.pkl
-kepler_local_data/
 joblib/
 utils/
 results/
-/kep
 .DS_Store
 *.swp
