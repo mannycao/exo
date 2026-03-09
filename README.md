@@ -1,164 +1,153 @@
-# Exoplanet Detection Pipeline
+# Multimodal-Integrity-Monitor
 
-## Project Overview
-This project implements an advanced pipeline for detecting exoplanets from light curve data, leveraging multimodal deep learning and Bayesian inference for robust predictions and uncertainty quantification. It integrates data fetching, preprocessing, model training, hyperparameter tuning, and uncertainty analysis into a cohesive workflow.
+This repository presents a systems-engineering approach to enhance the robustness and reliability of AI-driven perception systems in safety-critical applications. Developed as a JOSS (Journal of Open Source Software) project, it introduces a novel architectural separation between sensor fusion and continuous integrity monitoring. Our focus is on detecting "modal masking" – a condition where a system's output remains stable despite significant degradation in one or more sensor modalities – using Electro-Optical (EO) and Synthetic Aperture Radar (SAR) satellite imagery.
 
-## Background
-The search for exoplanets is a rapidly evolving field in astrophysics. Traditional methods often struggle with noisy data and the inherent uncertainties in astronomical observations. This pipeline aims to address these challenges by:
-- Utilizing both time-series and image-based representations of light curves.
-- Employing deep learning models capable of learning complex patterns.
-- Incorporating Bayesian inference (specifically, Monte Carlo Dropout) to provide not just predictions, but also a measure of confidence (uncertainty) in those predictions, which is crucial for scientific discovery and follow-up observations.
+## Installation
 
-## Features
-- **Multimodal Data Processing**: Handles both raw time-series light curves and their image representations (e.g., phase-folded transit images).
-- **Deep Learning Models**: Implements Convolutional Neural Networks (CNNs) for image data and 1D CNNs for time-series data, fused into a multimodal architecture.
-- **Bayesian Inference**: Quantifies prediction uncertainty using Monte Carlo Dropout.
-- **Hyperparameter Tuning**: Supports automated hyperparameter optimization for model training.
-- **Data Management**: Includes scripts for fetching and generating synthetic light curve data.
-- **Comprehensive Reporting**: Generates detailed reports and visualizations of model performance and uncertainty metrics.
+To set up your environment and install the necessary dependencies, please follow these steps:
 
-## Installation & Setup
-
-To get this project up and running, follow these steps:
-
-### 1. Clone the Repository
-First, clone the project repository to your local machine:
-```bash
-git clone https://github.com/your-username/exoplanet-detection.git
-cd exoplanet-detection
-```
-*(Replace `https://github.com/your-username/exoplanet-detection.git` with the actual repository URL)*
-
-### 2. Set up a Python Virtual Environment
-It's highly recommended to use a virtual environment to manage project dependencies and avoid conflicts with your system's Python packages.
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-```
-
-### 3. Install Dependencies
-Install all required Python packages using `pip`:
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Generate Sample Data (Optional, for quick start)
-If you don't have real light curve data, you can generate a small sample dataset for testing the pipeline:
-```bash
-python3 generate_data.py
-```
-This will create a `sample_data` directory containing synthetic light curves.
-
-## Usage
-
-### 1. Run the Main Pipeline
-The `main.py` script orchestrates the data processing, model training, and evaluation.
-
-```bash
-python3 main.py --planets_dir <path_to_confirmed_planets_data> \
-                --false_positives_dir <path_to_false_positives_data> \
-                --split_type [all|50_50]
-```
--   `<path_to_confirmed_planets_data>`: Directory containing FITS files for confirmed exoplanets.
--   `<path_to_false_positives_data>`: Directory containing FITS files for false positives.
--   `--split_type`:
-    -   `all`: Uses the entire dataset for training and validation.
-    -   `50_50`: Uses a 50/50 split of planets and false positives for a balanced dataset.
-
-**Example using generated sample data:**
-```bash
-python3 main.py --planets_dir sample_data/confirmed_planets \
-                --false_positives_dir sample_data/false_positives \
-                --split_type all
-```
-This will output results, including the trained model, to a timestamped directory under `results/`.
-
-### 2. Run Bayesian Inference
-After training a model, you can run Bayesian inference to quantify prediction uncertainties.
-
-```bash
-python3 run_bayesian_inference.py --model_path <path_to_trained_model.keras> \
-                                  --planets_dir <path_to_confirmed_planets_data> \
-                                  --false_positives_dir <path_to_false_positives_data> \
-                                  --output_dir <output_directory_for_inference_results> \
-                                  --n_samples <number_of_monte_carlo_samples>
-```
--   `<path_to_trained_model.keras>`: Path to the saved Keras model file (e.g., `results/run_YYYYMMDD-HHMMSS/exo_multimodal_model_best.keras`).
--   `<output_directory_for_inference_results>`: Directory where inference results and plots will be saved.
--   `--n_samples`: Number of Monte Carlo samples to draw for uncertainty estimation (e.g., 100).
-
-### 3. Run Hyperparameter Tuning
-To optimize model hyperparameters, use the `run_hp_tuning.py` script.
-
-```bash
-python3 run_hp_tuning.py --planets_dir <path_to_confirmed_planets_data> \
-                         --false_positives_dir <path_to_false_positives_data> \
-                         --n_iter <number_of_tuning_iterations> \
-                         --cv <number_of_cross_validation_folds> \
-                         --max_workers <number_of_parallel_workers>
-```
--   `--n_iter`: Number of hyperparameter combinations to try.
--   `--cv`: Number of cross-validation folds for evaluation.
--   `--max_workers`: Number of parallel processes to use for tuning.
-
-## Project Structure
-```
-.
-├── config.py                 # Global configuration settings
-├── main.py                   # Main pipeline execution script (training, evaluation)
-├── generate_data.py          # Script to generate synthetic light curve data
-├── run_bayesian_inference.py # Script for running Bayesian inference
-├── run_hp_tuning.py          # Script for hyperparameter tuning
-├── requirements.txt          # Python dependency list
-├── system_test.py            # Comprehensive system tests
-├── data/
-│   ├── data_fetcher.py       # Utilities for fetching and handling data
-│   ├── dataset_generator.py  # Creates multimodal datasets
-│   └── light_curves/         # Placeholder for raw light curve data
-│   └── metadata/             # Exoplanet metadata
-├── models/
-│   ├── bayesian_predictor.py # Implements Bayesian prediction logic
-│   ├── cnn_model.py          # CNN model definitions
-│   ├── multimodal_model.py   # Combines CNNs for multimodal input
-│   └── model_trainer.py      # Handles model training
-├── pipeline/
-│   ├── enhanced_pipeline_runner.py # Orchestrates the main pipeline steps
-│   └── report_generator.py   # Generates final reports
-├── utils/
-│   ├── file_utils.py         # File system utilities (e.g., logging setup)
-│   ├── metrics.py            # Custom evaluation metrics
-│   └── plotting.py           # Plotting and visualization functions
-└── results/                  # Directory for all pipeline outputs (models, reports, plots)
-```
-
-## Version Control
-This project uses Git for version control. The main branch is `main`.
--   **Branching Strategy**: We recommend a feature-branch workflow. Create a new branch for each new feature or bug fix from `main`.
+1.  **Clone the repository:**
     ```bash
-    git checkout main
-    git pull origin main
-    git checkout -b feature/your-feature-name
+    git clone https://github.com/your-username/Multimodal-Integrity-Monitor.git
+    cd Multimodal-Integrity-Monitor
     ```
--   **Commit Messages**: Use clear and concise commit messages. A good practice is to start with a type (e.g., `feat:`, `fix:`, `docs:`) followed by a brief description.
--   **Pull Requests**: All changes should be submitted via Pull Requests to the `main` branch for review.
 
-## Contributing
-We welcome contributions to this project! Please follow these steps:
-1.  Fork the repository.
-2.  Create a new branch (`git checkout -b feature/your-feature-name`).
-3.  Make your changes and ensure they adhere to the existing code style.
-4.  Write or update tests for your changes.
-5.  Ensure all existing tests pass (`python3 system_test.py`).
-6.  Commit your changes (`git commit -m "feat: Add new feature"`).
-7.  Push to your fork (`git push origin feature/your-feature-name`).
-8.  Create a Pull Request to the `main` branch of the upstream repository.
+2.  **Create and activate a virtual environment (recommended):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    ```
 
-## Next Steps / Future Enhancements
--   **Real Data Integration**: Implement robust data fetching and preprocessing for large-scale real astronomical datasets (e.g., Kepler, TESS).
--   **Advanced Models**: Explore more sophisticated deep learning architectures (e.g., Transformers, LSTMs) or ensemble methods.
--   **Uncertainty Calibration**: Improve the calibration of predicted uncertainties.
--   **Deployment**: Develop a deployment strategy (e.g., Docker containers, cloud functions) for running the pipeline in production.
--   **Web Interface**: Create a simple web-based interface for easier interaction and visualization of results.
--   **Continuous Integration/Deployment (CI/CD)**: Set up automated testing and deployment pipelines.
+3.  **Install dependencies:**
+    All required Python packages are listed in `requirements.txt`.
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *Note: For M-series Apple Silicon Macs, PyTorch will automatically utilize the Metal Performance Shaders (MPS) backend if available, ensuring GPU acceleration.*
 
+## Quick Start: Running a Sample Inference
+
+This section demonstrates how to load the pre-trained `DualBranchIntegrityNet` model and perform a sample inference.
+
+First, ensure you have a trained model file, `nominal_model.pth`, in your project root. If you haven't trained one yet, follow the steps in the "Reproducing Experiments" section.
+
+```python
+import torch
+from torchvision import transforms
+from PIL import Image
+from model import DualBranchIntegrityNet
+from dataset import SEN12Dataset # Used for data loading example, assume some dummy data
+
+# --- Configuration (Ensure these paths are correct) ---
+MODEL_PATH = "nominal_model.pth"
+# Assuming DATA_DIR points to the processed SEN12 dataset
+DATA_DIR = "processed_sen12_data/processed" 
+
+def run_sample_inference():
+    # Set device for inference
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    print(f"Using device: {device}")
+
+    # Load the trained model
+    model = DualBranchIntegrityNet().to(device)
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.eval() # Set model to evaluation mode
+
+    # Prepare dummy data for inference
+    # In a real scenario, you would load an actual image
+    # For demonstration, let's grab a sample from the validation dataset
+    tfm = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
+    sample_dataset = SEN12Dataset(DATA_DIR, split='val', transform=tfm)
+    
+    if len(sample_dataset) == 0:
+        print("Error: No samples found in the dataset. Cannot perform inference.")
+        return
+
+    # Take the first sample
+    x_eo_sample, x_sar_sample, _ = sample_dataset[0] 
+    
+    # Add a batch dimension (model expects batches)
+    x_eo_sample = x_eo_sample.unsqueeze(0).to(device)
+    x_sar_sample = x_sar_sample.unsqueeze(0).to(device)
+
+    # Perform inference
+    with torch.no_grad():
+        p_fused, p_eo, p_sar = model(x_eo_sample, x_sar_sample)
+
+    print("\n--- Sample Inference Results ---")
+    print(f"Fused Prediction: {p_fused.item():.4f}")
+    print(f"EO Branch Prediction: {p_eo.item():.4f}")
+    print(f"SAR Branch Prediction: {p_sar.item():.4f}")
+    print(f"Disagreement (delta): {torch.abs(p_eo - p_sar).item():.4f}")
+
+if __name__ == "__main__":
+    run_sample_inference()
+```
+*Save the above code as `src/quick_start.py` and run it from your project root:*
+```bash
+python src/quick_start.py
+```
+
+## Reproducing Experiments
+
+This project includes several scripts to reproduce the experiments discussed in our paper, validating the integrity monitor across various degradation scenarios.
+
+1.  **Train the Baseline Model:**
+    The core `DualBranchIntegrityNet` is trained using `src/train_baseline.py`.
+    ```bash
+    python src/train_baseline.py
+    ```
+    *Note: Training on the full dataset requires a substantial amount of time and computational resources. This script is configured to leverage GPUs (CUDA or MPS) if available.*
+
+2.  **Evaluate Asymmetric Optical Degradation ("The Cloud Cliff"):**
+    This experiment assesses the system's response to cloud occlusion, simulating a failure mode specific to the optical sensor.
+    ```bash
+    python src/evaluate_cliff.py
+    ```
+    *Results are saved to `cloud_cliff_results.csv`.*
+
+3.  **Evaluate Asymmetric SAR Degradation:**
+    This experiment investigates the impact of SAR speckle noise on the system's performance and integrity.
+    ```bash
+    python src/evaluate_sar.py
+    ```
+    *Results are saved to `sar_noise_results.csv`.*
+
+4.  **Evaluate Symmetric Degradation ("The Blind Spot"):**
+    This experiment examines scenarios where both EO and SAR modalities are equally degraded (e.g., by blur).
+    ```bash
+    python src/evaluate_symmetric.py
+    ```
+    *Results are saved to `symmetric_results.csv`.*
+
+5.  **Perform Threshold Analysis:**
+    This script analyzes the distributions of nominal versus degraded disagreement scores and calculates the optimal integrity threshold ($\tau$) using ROC analysis.
+    ```bash
+    python src/run_analysis.py
+    ```
+    *Results include `Figure3_Threshold_Analysis.png` and `threshold_stats.txt`.*
+
+6.  **Plot Comprehensive Validation Figure:**
+    Generates a combined plot showcasing the integrity monitor's behavior across all tested failure modes.
+    ```bash
+    python src/plot_comprehensive_results.py
+    ```
+    *Generates `Figure2_Comprehensive_Validation.png`.*
+
+7.  **Plot Recovery Analysis Figure:**
+    Demonstrates the resilience gain achieved by the integrity-managed fusion strategy.
+    ```bash
+    python src/plot_recovery_analysis.py
+    ```
+    *Generates `Figure6_Recovery_Analysis.png` and `recovery_results.csv`.*
+
+## Key Systems Engineering Notes
+
+Our integrity monitor is designed around the principle of architectural separation, allowing continuous validation of sensor fusion processes. The optimal integrity threshold, $\tau=0.23$ (as determined by the Youden Index in `run_analysis.py`), is specifically chosen to minimize overall risk in safety-critical contexts by balancing false vetoes against missed anomaly detections. This deliberate design ensures that the system can operate robustly even when individual sensor modalities are compromised.
+
+For a full systems-theoretic formulation, in-depth discussion of modal masking, and Lipschitz continuity proofs underpinning this work, please refer to our accompanying paper in `paper.md`.

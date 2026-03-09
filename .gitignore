@@ -1,6 +1,11 @@
 data/metadata/kepler_observation_list.pkl
+ROIs1158_spring/
+processed_sen12_data/
+paper2_experiments/
 joblib/
 utils/
 results/
+kepler_fits_files/
+kep/
 .DS_Store
 *.swp

@@ -1,0 +1,7 @@
+Opacity,Mean_Disagreement,Fused_Accuracy,Experiment
+0.0,0.023663018,0.9933978873239436,Asymmetric_Cloud
+0.2,0.03242231,0.96875,Asymmetric_Cloud
+0.4,0.03230994,0.9753521126760564,Asymmetric_Cloud
+0.6,0.040905092,0.9907570422535211,Asymmetric_Cloud
+0.8,0.6313606,0.9788732394366197,Asymmetric_Cloud
+1.0,0.9115583,0.954225352112676,Asymmetric_Cloud
