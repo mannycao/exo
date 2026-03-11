@@ -9,10 +9,10 @@ tags:
   - neural networks
 authors:
   - name: Emmanuel Cao
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0005-9837-0695
     affiliation: 1
 affiliations:
- - name: Department of Computer Science, University of Exoplanet Research, City, Country
+ - name: NavTech, Inc
    index: 1
 date: 10 March 2026
 bibliography: paper.bib
