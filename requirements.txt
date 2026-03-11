@@ -7,6 +7,9 @@ pandas
 scipy
 scikit-image
 matplotlib
+scikit-learn
+statsmodels
+scikit-posthocs
 
 # Astronomy specific
 astroquery

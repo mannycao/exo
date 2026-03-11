@@ -1,6 +1,0 @@
-2026-02-07 16:00:24,529 - __main__ - INFO - Starting download and processing of Kepler KOI data from https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=cumulative&format=csv
-2026-02-07 16:00:27,226 - __main__ - INFO - Downloaded Kepler KOI data. Shape: (9564, 50)
-2026-02-07 16:00:27,230 - __main__ - INFO - Used 'koi_disposition' for 'true_label' mapping.
-2026-02-07 16:00:27,233 - __main__ - INFO - Cleaned Kepler KOI data. Shape: (9564, 3)
-2026-02-07 16:00:27,244 - __main__ - INFO - Kepler KOI data saved to: /Users/emmanuel/proj/phd/data_files/cumulative_koi.csv
-2026-02-07 16:00:27,244 - __main__ - INFO - Total Kepler KOIs: 9564
