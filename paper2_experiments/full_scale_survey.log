@@ -1,8 +1,0 @@
-2026-02-05 08:54:30,349 - __main__ - INFO - Starting full-scale survey for disagreement pipeline.
-2026-02-05 08:54:30,349 - __main__ - INFO - Confirmed Planets Directory: kep/confirmed_planets/mastDownload/TESS/
-2026-02-05 08:54:30,349 - __main__ - INFO - False Positives Directory: kep/false_positives/
-2026-02-05 08:54:30,349 - __main__ - INFO - Scanning kep/confirmed_planets/mastDownload/TESS/ for confirmed_planet files...
-2026-02-05 08:54:31,429 - __main__ - INFO - Found 7991 files in kep/confirmed_planets/mastDownload/TESS/.
-2026-02-05 08:54:31,429 - __main__ - INFO - Scanning kep/false_positives/ for false_positive files...
-2026-02-05 08:54:31,983 - __main__ - INFO - Found 18332 files in kep/false_positives/.
-2026-02-05 08:54:31,986 - __main__ - INFO - Total unique targets found: 383
